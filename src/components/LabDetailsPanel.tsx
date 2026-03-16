@@ -98,7 +98,7 @@ const MeteoCore = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
          >
-            <span className="text-[10px] font-bold text-slate-600 tracking-widest uppercase">MeteoAI Core</span>
+            <span className="text-[10px] font-bold text-slate-600 tracking-widest uppercase">TyphoonMonitor Core</span>
          </motion.div>
       </div>
 
@@ -293,7 +293,7 @@ export const LabDetailsPanel: React.FC<LabDetailsPanelProps> = ({ isOpen, onClos
                 <>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-wider shadow-md">
                     <Microscope size={14} className="text-blue-400" />
-                    <span>MeteoAI Laboratory</span>
+                    <span>TyphoonMonitor Laboratory</span>
                   </div>
                   
                   <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 leading-[1.1] tracking-tight">

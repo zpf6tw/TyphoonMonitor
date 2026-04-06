@@ -237,7 +237,6 @@ export const LabTeam: React.FC<{ language: Language }> = ({ language }) => {
     };
 
     const MEMBERS = [
-        { name: language === 'zh' ? "学生 A" : "Student A", role: language === 'zh' ? "博士研究生" : "PhD Candidate", type: "Student" },
         { name: language === 'zh' ? "学生 B" : "Student B", role: language === 'zh' ? "博士研究生" : "PhD Candidate", type: "Student" },
         { name: language === 'zh' ? "学生 C" : "Student C", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },
         { name: language === 'zh' ? "学生 D" : "Student D", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },

@@ -1,10 +1,15 @@
 
 ## 运行项目 (Run Locally)
 
+## 运行项目 (Run Locally)
+
+**环境要求 (Prerequisites):** Node.js
 **环境要求 (Prerequisites):** Node.js
 
 1. 安装依赖 (Install dependencies):
+1. 安装依赖 (Install dependencies):
    `npm install`
+2. 运行项目 (Run the app):
 2. 运行项目 (Run the app):
    `npm run dev`
 

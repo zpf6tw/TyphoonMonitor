@@ -21,7 +21,6 @@
 ## 文件结构 (File Structure)
 
 ```text
-/
 ├── public/                 # 静态资源 (如云图图片等)
 ├── src/
 │   ├── components/         # React 组件 (如地图、图表、页面等)

@@ -239,11 +239,10 @@ const App: React.FC = () => {
                 <div className="flex-1 min-w-[20px]"></div>
 
                 {/* 悬浮指示器 - 8 参数对比仪表盘 */}
-                <div className="bg-white/95 backdrop-blur-md p-5 rounded-[20px] border border-white shadow-2xl flex flex-col gap-4 min-w-[280px] pointer-events-auto shrink-0 h-fit">
+                <div className={`bg-white/95 backdrop-blur-md p-5 rounded-[20px] border border-white shadow-2xl flex flex-col gap-4 min-w-[280px] pointer-events-auto shrink-0 h-fit transition-all duration-300 ${!isRightPanelOpen ? 'mt-12' : ''}`}>
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                     <span>{t('model_comparison')}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-blue-500 lowercase">active</span>
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                     </div>
                   </div>
@@ -303,6 +302,22 @@ const App: React.FC = () => {
                       </div>
                       <div className="text-right font-mono text-sm font-bold text-blue-600">
                          {selectedCase.data[currentIndex].pressure_pred.toFixed(0)}
+                      </div>
+
+                      {/* 第 5 行：经度 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center">
+                         {language === 'en' ? 'Longitude' : '经度'} <span className="ml-1 text-[8px] opacity-60">°E</span>
+                      </div>
+                      <div className="col-span-2 text-right font-mono text-sm font-bold text-teal-600">
+                         {selectedCase.data[currentIndex].lng.toFixed(2)}
+                      </div>
+
+                      {/* 第 6 行：纬度 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center">
+                         {language === 'en' ? 'Latitude' : '纬度'} <span className="ml-1 text-[8px] opacity-60">°N</span>
+                      </div>
+                      <div className="col-span-2 text-right font-mono text-sm font-bold text-teal-600">
+                         {selectedCase.data[currentIndex].lat.toFixed(2)}
                       </div>
                   </div>
                 </div>

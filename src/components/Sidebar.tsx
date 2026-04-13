@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
       <div className="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
         <div>
           <h1 className="font-bold text-slate-800 leading-tight text-sm">{t('lab_name')}</h1>
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-0.5">RESEARCH PLATFORM</p>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-0.5">AI METEOROLOGY</p>
         </div>
         
         {/* 折叠按钮 */}

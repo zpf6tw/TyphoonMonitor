@@ -167,24 +167,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
           `,
           iconSize: [16, 16],
           iconAnchor: [8, 8]
-        })}>
-          <Popup className="meteo-popup">
-            <div className="p-1">
-              <p className="text-[10px] text-slate-500 font-bold">{currentPoint.time}</p>
-              <hr className="my-1 border-slate-100" />
-              <div className="space-y-1">
-                <div className="flex justify-between gap-4">
-                  <span className="text-[10px] text-slate-400 font-medium uppercase">{t('lat')}</span>
-                  <span className="text-[10px] text-slate-700 font-bold">{currentPoint.lat.toFixed(2)}°</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-[10px] text-slate-400 font-medium uppercase">{t('lng')}</span>
-                  <span className="text-[10px] text-slate-700 font-bold">{currentPoint.lng.toFixed(2)}°</span>
-                </div>
-              </div>
-            </div>
-          </Popup>
-        </Marker>
+        })} />
 
         <MapController center={currentPos} bounds={imageBounds} />
       </MapContainer>

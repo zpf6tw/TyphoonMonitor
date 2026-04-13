@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, Circle, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Circle, Marker, Popup, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { TyphoonPoint, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -18,32 +18,82 @@ interface TyphoonMapProps {
   currentIndex: number;
   language: Language;
   isRightPanelOpen: boolean; // 添加 prop 以根据侧边栏状态控制布局
+  showCloudMap: boolean;
 }
 
-const MapController: React.FC<{ center: [number, number] }> = ({ center }) => {
+const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression }> = ({ center, bounds }) => {
   const map = useMap();
+
+  // 处理边界和缩放限制
+  useEffect(() => {
+    const leafletBounds = L.latLngBounds(bounds);
+
+    const updateMapConstraints = () => {
+      map.invalidateSize();
+      // inside=true 确保地图视口始终完全包含在 bounds 内，防止出现灰色未覆盖区域
+      const minZoom = map.getBoundsZoom(leafletBounds, true);
+      map.setMinZoom(minZoom);
+      map.setMaxBounds(leafletBounds);
+
+      // 如果当前缩放级别小于新的最小缩放级别，则自动放大
+      if (map.getZoom() < minZoom) {
+        map.setZoom(minZoom);
+      }
+    };
+
+    // 初始化更新
+    updateMapConstraints();
+
+    // 监听容器大小变化（如侧边栏收缩/展开）
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(() => {
+        updateMapConstraints();
+      });
+    });
+
+    resizeObserver.observe(map.getContainer());
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [map, bounds]);
+
+  // 处理中心点平移
   useEffect(() => {
     // 持续时间略小于 1000ms 间隔，以获得更平滑的视觉连续性
     map.panTo(center, { animate: true, duration: 0.8 });
   }, [center, map]);
+
   return null;
 };
 
 // 内风圈保持恒定颜色，防止模拟过程中颜色偏移
 const INNER_RING_COLOR = '#3b82f6'; 
 
-export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, language, isRightPanelOpen }) => {
+export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, language, isRightPanelOpen, showCloudMap }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
   
   const path = useMemo(() => data.map(p => [p.lat, p.lng] as [number, number]), [data]);
   const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
 
+  // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
+  const imageBounds: L.LatLngBoundsExpression = [
+    [-60, 80], // [South, West]
+    [60, 200]  // [North, East]
+  ];
+
+  // 使用本地 public 目录下的图片
+  const cloudImageUrl = '/cloud_image.png';
+
   return (
     <div className="w-full h-full relative">
       <MapContainer 
         center={currentPos} 
         zoom={5} 
+        minZoom={4}
+        maxBounds={imageBounds}
+        maxBoundsViscosity={1.0}
         scrollWheelZoom={true} 
         className="z-0"
         zoomControl={false}
@@ -69,6 +119,16 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
           weight={3} 
           opacity={1}
         />
+
+        {/* 卫星云图叠加层 */}
+        {showCloudMap && (
+          <ImageOverlay
+            url={cloudImageUrl}
+            bounds={imageBounds}
+            opacity={0.5}
+            className="satellite-cloud-overlay"
+          />
+        )}
 
         {/* 外风圈 - 可视化 IDOL 预测结构 */}
         <Circle
@@ -126,7 +186,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
           </Popup>
         </Marker>
 
-        <MapController center={currentPos} />
+        <MapController center={currentPos} bounds={imageBounds} />
       </MapContainer>
 
       {/* 内核呼吸动画样式 */}
@@ -140,79 +200,6 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
           animation: innerBreathing 2.5s ease-in-out infinite;
         }
       `}} />
-
-      {/* 悬浮指示器 - 8 参数对比仪表盘 */}
-      <div 
-        className={`absolute right-6 z-[1000] bg-white/95 backdrop-blur-md p-5 rounded-[20px] border border-white shadow-2xl flex flex-col gap-4 min-w-[320px] transition-all duration-300 ease-in-out ${
-          isRightPanelOpen ? 'top-6' : 'top-24'
-        }`}
-      >
-        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-          <span>{t('model_comparison')}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-blue-500 lowercase">active</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          </div>
-        </div>
-        
-        {/* 对比网格 */}
-        <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-3">
-            {/* 表头 */}
-            <div className="h-4"></div> {/* 空白角 */}
-            <div className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-tighter bg-slate-50 rounded py-0.5">
-               {t('traditional_method')}
-            </div>
-            <div className="text-[10px] font-bold text-blue-500 text-center uppercase tracking-tighter bg-blue-50 rounded py-0.5">
-               {t('idol_model')}
-            </div>
-
-            {/* 第 1 行：内半径 */}
-            <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
-                {t('r_inner')}
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_0_1px_rgba(59,130,246,0.3)]" />
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-slate-600">
-               {currentPoint.inner_radius_real}<span className="text-[8px] text-slate-400 ml-0.5 font-normal">km</span>
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-blue-600">
-               {currentPoint.inner_radius_pred}<span className="text-[8px] text-blue-400 ml-0.5 font-normal">km</span>
-            </div>
-
-            {/* 第 2 行：外半径 */}
-            <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
-                {t('r_outer')}
-                <div className="w-2.5 h-2.5 rounded-full border border-blue-500 bg-blue-50" />
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-slate-600">
-               {currentPoint.outer_radius_real}<span className="text-[8px] text-slate-400 ml-0.5 font-normal">km</span>
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-blue-600">
-               {currentPoint.outer_radius_pred}<span className="text-[8px] text-blue-400 ml-0.5 font-normal">km</span>
-            </div>
-
-            {/* 第 3 行：风速 */}
-            <div className="text-[10px] font-bold text-slate-400 flex items-center">
-               {t('wind_label_short')} <span className="ml-1 text-[8px] opacity-60">m/s</span>
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-slate-600">
-               {currentPoint.intensity_real}
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-blue-600">
-               {currentPoint.intensity_pred}
-            </div>
-
-            {/* 第 4 行：气压 */}
-            <div className="text-[10px] font-bold text-slate-400 flex items-center">
-               {t('pressure_label_short')} <span className="ml-1 text-[8px] opacity-60">hPa</span>
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-slate-600">
-               {currentPoint.pressure.toFixed(0)}
-            </div>
-            <div className="text-right font-mono text-sm font-bold text-blue-600">
-               {currentPoint.pressure_pred.toFixed(0)}
-            </div>
-        </div>
-      </div>
     </div>
   );
 };

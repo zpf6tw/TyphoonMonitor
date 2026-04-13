@@ -94,9 +94,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
   const t = (key: string) => TRANSLATIONS[key][language];
 
   return (
-    // 固定宽度 288px，严格匹配父元素 motion.aside 的宽度
-    <div className="h-full w-[288px] min-w-[288px] border-r border-slate-200 bg-white flex flex-col z-20 relative">
-      <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-2">
+    // 固定宽度 240px，严格匹配父元素 motion.aside 的宽度
+    <div className="h-full w-[240px] min-w-[240px] border-r border-slate-200 bg-white flex flex-col z-20 relative">
+      <div className="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
         <div>
           <h1 className="font-bold text-slate-800 leading-tight text-sm">{t('lab_name')}</h1>
           <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-0.5">RESEARCH PLATFORM</p>

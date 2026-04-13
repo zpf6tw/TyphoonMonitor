@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TyphoonMap } from './components/TyphoonMap';
 import { MetricsChart } from './components/MetricsChart';
-import { SatelliteView } from './components/SatelliteView';
 import { LabOverview, LabTeam, LabResearch, LabPublications } from './components/LabPages';
 import { MOCK_CASES } from './utils/dataGenerator';
 import { Language, ViewType } from './types';
@@ -20,7 +19,8 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Settings2
+  Settings2,
+  Cloud
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -130,11 +130,11 @@ const App: React.FC = () => {
   // 布局状态
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [showCloudMap, setShowCloudMap] = useState(true);
 
   // 面板内部状态
   const [panels, setPanels] = useState({
     metrics: true,
-    satellite: true,
     physics: true
   });
 
@@ -194,6 +194,7 @@ const App: React.FC = () => {
                 currentIndex={currentIndex} 
                 language={language} 
                 isRightPanelOpen={isRightPanelOpen}
+                showCloudMap={showCloudMap}
               />
             </div>
 
@@ -210,13 +211,14 @@ const App: React.FC = () => {
               </motion.button>
             )}
 
-            {/* 顶部悬浮控制（场次选择器） */}
+            {/* 顶部悬浮控制区域 */}
             <div 
-                className={`absolute top-6 z-[1001] transition-all duration-300 ease-in-out pointer-events-none flex ${
+                className={`absolute top-6 right-6 z-[1001] transition-all duration-300 ease-in-out pointer-events-none flex flex-wrap gap-4 items-start ${
                     !isLeftPanelOpen ? 'left-[4.5rem]' : 'left-6'
                 }`}
             >
-                <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl border border-white flex items-center gap-4 pointer-events-auto">
+                {/* 场次选择器 */}
+                <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl border border-white flex items-center gap-4 pointer-events-auto shrink-0 h-fit">
                     <div className="flex items-center gap-2">
                        <Target size={14} className="text-blue-500" />
                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('active_case')}</span>
@@ -232,17 +234,89 @@ const App: React.FC = () => {
                       }}
                     />
                 </div>
+
+                {/* 占位，让右侧的仪表盘靠右 */}
+                <div className="flex-1 min-w-[20px]"></div>
+
+                {/* 悬浮指示器 - 8 参数对比仪表盘 */}
+                <div className="bg-white/95 backdrop-blur-md p-5 rounded-[20px] border border-white shadow-2xl flex flex-col gap-4 min-w-[280px] pointer-events-auto shrink-0 h-fit">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                    <span>{t('model_comparison')}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-blue-500 lowercase">active</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  {/* 对比网格 */}
+                  <div className="grid grid-cols-[auto_1fr_1fr] gap-x-4 gap-y-3">
+                      {/* 表头 */}
+                      <div className="h-4"></div> {/* 空白角 */}
+                      <div className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-tighter bg-slate-50 rounded py-0.5">
+                         {t('traditional_method')}
+                      </div>
+                      <div className="text-[10px] font-bold text-blue-500 text-center uppercase tracking-tighter bg-blue-50 rounded py-0.5">
+                         {t('idol_model')}
+                      </div>
+
+                      {/* 第 1 行：内半径 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                          {t('r_inner')}
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 border-2 border-white shadow-[0_0_0_1px_rgba(59,130,246,0.3)]" />
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-slate-600">
+                         {selectedCase.data[currentIndex].inner_radius_real}<span className="text-[8px] text-slate-400 ml-0.5 font-normal">km</span>
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-blue-600">
+                         {selectedCase.data[currentIndex].inner_radius_pred}<span className="text-[8px] text-blue-400 ml-0.5 font-normal">km</span>
+                      </div>
+
+                      {/* 第 2 行：外半径 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                          {t('r_outer')}
+                          <div className="w-2.5 h-2.5 rounded-full border border-blue-500 bg-blue-50" />
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-slate-600">
+                         {selectedCase.data[currentIndex].outer_radius_real}<span className="text-[8px] text-slate-400 ml-0.5 font-normal">km</span>
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-blue-600">
+                         {selectedCase.data[currentIndex].outer_radius_pred}<span className="text-[8px] text-blue-400 ml-0.5 font-normal">km</span>
+                      </div>
+
+                      {/* 第 3 行：风速 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center">
+                         {t('wind_label_short')} <span className="ml-1 text-[8px] opacity-60">m/s</span>
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-slate-600">
+                         {selectedCase.data[currentIndex].intensity_real}
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-blue-600">
+                         {selectedCase.data[currentIndex].intensity_pred}
+                      </div>
+
+                      {/* 第 4 行：气压 */}
+                      <div className="text-[10px] font-bold text-slate-400 flex items-center">
+                         {t('pressure_label_short')} <span className="ml-1 text-[8px] opacity-60">hPa</span>
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-slate-600">
+                         {selectedCase.data[currentIndex].pressure.toFixed(0)}
+                      </div>
+                      <div className="text-right font-mono text-sm font-bold text-blue-600">
+                         {selectedCase.data[currentIndex].pressure_pred.toFixed(0)}
+                      </div>
+                  </div>
+                </div>
             </div>
 
             {/* 底部时间轴控制 */}
             <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none">
               <div className="bg-white/95 backdrop-blur-md p-6 pb-6 border-t border-slate-200 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] flex flex-col gap-4 pointer-events-auto w-full">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 sm:gap-6">
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setIsPlaying(!isPlaying)}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${
                             isPlaying ? 'bg-slate-100 text-slate-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                         }`}
                       >
@@ -250,26 +324,46 @@ const App: React.FC = () => {
                       </button>
                       <button 
                         onClick={resetSimulation}
-                        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors"
+                        className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 transition-colors shrink-0"
+                        title={language === 'en' ? 'Reset' : '重置'}
                       >
                         <RotateCcw size={18} />
                       </button>
+                      <button 
+                        onClick={() => setShowCloudMap(!showCloudMap)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                          showCloudMap ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-400'
+                        }`}
+                        title={language === 'en' ? 'Toggle Cloud Map' : '切换红外云图'}
+                      >
+                        <Cloud size={18} />
+                      </button>
                     </div>
-                    <div>
+                    <div className="whitespace-nowrap">
                        <h4 className="text-sm font-bold text-slate-800">{t('timeline')}</h4>
                        <p className="text-[10px] text-slate-400 font-medium">{t('zoom_hint')}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                     <div className="text-right">
+                  <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shrink-0">
+                     <div className="text-right whitespace-nowrap">
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{language === 'en' ? 'Simulation Time' : '模拟时间'}</p>
                         <p className="text-sm font-bold text-blue-600">T+{selectedCase.data[currentIndex].time}</p>
                      </div>
-                     <div className="h-8 w-px bg-slate-200" />
-                     <div className="flex gap-1">
-                        <button className="p-1 hover:bg-slate-200 rounded text-slate-400"><ChevronLeft size={16}/></button>
-                        <button className="p-1 hover:bg-slate-200 rounded text-slate-400"><ChevronRight size={16}/></button>
+                     <div className="h-8 w-px bg-slate-200 shrink-0" />
+                     <div className="flex gap-1 shrink-0">
+                        <button 
+                          onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
+                          className="p-1 hover:bg-slate-200 rounded text-slate-400"
+                        >
+                          <ChevronLeft size={16}/>
+                        </button>
+                        <button 
+                          onClick={() => setCurrentIndex(Math.min(selectedCase.data.length - 1, currentIndex + 1))}
+                          className="p-1 hover:bg-slate-200 rounded text-slate-400"
+                        >
+                          <ChevronRight size={16}/>
+                        </button>
                      </div>
                   </div>
                 </div>
@@ -290,8 +384,10 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="flex justify-between px-1">
-                    {[0, 6, 12, 18, 24].map(h => (
-                        <span key={h} className="text-[10px] text-slate-400 font-bold">{String(h).padStart(2, '0')}:00</span>
+                    {selectedCase.data.map((point, idx) => (
+                        idx % 2 === 0 ? (
+                            <span key={idx} className="text-[10px] text-slate-400 font-bold">{point.time}</span>
+                        ) : null
                     ))}
                 </div>
               </div>
@@ -306,8 +402,8 @@ const App: React.FC = () => {
       
       {/* --- 左侧边栏容器 --- */}
       <motion.aside
-        initial={{ width: 288 }} // w-72 = 288px
-        animate={{ width: isLeftPanelOpen ? 288 : 0 }}
+        initial={{ width: 240 }} // w-60 = 240px
+        animate={{ width: isLeftPanelOpen ? 240 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         className="flex-shrink-0 overflow-hidden relative z-20"
       >
@@ -377,15 +473,6 @@ const App: React.FC = () => {
                         currentIndex={currentIndex} 
                         language={language} 
                     />
-                    </CollapsiblePanel>
-                    
-                    {/* Satellite View Panel */}
-                    <CollapsiblePanel 
-                    title={t('cloud_view')} 
-                    isOpen={panels.satellite} 
-                    onToggle={() => togglePanel('satellite')}
-                    >
-                    <SatelliteView language={language} />
                     </CollapsiblePanel>
 
                     {/* 物理先验解释面板 */}

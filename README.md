@@ -1,5 +1,9 @@
 
-## 运行项目 (运行项目 (Run Locally))
+# 智慧气象 AI 平台 (MeteoAI)
+
+**官方域名 / Official Domain:** [aimeteorology.cn](http://aimeteorology.cn)
+
+## 运行项目 (Run Locally)
 
 **环境要求 (Prerequisites):** Node.js
 
@@ -21,6 +25,7 @@
 ## 文件结构 (File Structure)
 
 ```text
+/
 ├── public/                 # 静态资源 (如云图图片等)
 ├── src/
 │   ├── components/         # React 组件 (如地图、图表、页面等)

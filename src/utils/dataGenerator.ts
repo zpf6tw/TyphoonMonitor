@@ -1,9 +1,8 @@
 
 import { TyphoonPoint, TyphoonCase } from '../types';
 
-export const generateTyphoonData = (caseName: string): TyphoonPoint[] => {
+export const generateTyphoonData = (caseName: string, hours: number = 24): TyphoonPoint[] => {
   const points: TyphoonPoint[] = [];
-  const hours = 24;
   
   // 不同台风场次的起始位置
   // 漂移因子现在是应用曲率前的基础速度
@@ -14,7 +13,7 @@ export const generateTyphoonData = (caseName: string): TyphoonPoint[] => {
 
   const { lat: baseLat, lng: baseLng, drift } = startPos[caseName] || startPos['In-Fa'];
 
-  for (let i = 0; i <= hours; i++) {
+  for (let i = 0; i <= hours; i += 3) {
     const time = `${String(i).padStart(2, '0')}:00`;
     
     // 1. 模拟移动（真实路径）- 逼真的曲线路径
@@ -83,6 +82,6 @@ export const generateTyphoonData = (caseName: string): TyphoonPoint[] => {
 };
 
 export const MOCK_CASES: TyphoonCase[] = [
-  { id: '1', nameEn: 'Typhoon In-Fa', nameZh: '台风“烟花”', data: generateTyphoonData('In-Fa') },
-  { id: '2', nameEn: 'Typhoon Muifa', nameZh: '台风“梅花”', data: generateTyphoonData('Muifa') }
+  { id: '1', nameEn: 'Typhoon In-Fa', nameZh: '台风“烟花”', data: generateTyphoonData('In-Fa', 48) },
+  { id: '2', nameEn: 'Typhoon Muifa', nameZh: '台风“梅花”', data: generateTyphoonData('Muifa', 36) }
 ];

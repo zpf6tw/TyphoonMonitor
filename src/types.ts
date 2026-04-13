@@ -1,7 +1,7 @@
 
 export interface TyphoonPoint {
   time: string;
-  // 真实 / 传统（真实情况）
+  // 真实 / 真值（真实情况）
   lat: number;
   lng: number;
   intensity_real: number;

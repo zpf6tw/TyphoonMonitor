@@ -23,6 +23,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Language } from '../types';
+import teamData from '../data/team.json';
 
 const paperModules = import.meta.glob('/src/papers/*.pdf', { query: '?url', import: 'default', eager: true });
 
@@ -215,6 +216,14 @@ export const LabOverview: React.FC<{ language: Language }> = ({ language }) => {
                         ? "浙江工业大学计算机学院计算机视觉团队，聚焦计算机视觉、智慧气象与人工智能的交叉研究领域，科研积累深厚，平台设施完善。团队当前承担国家自然科学基金联合重点、面上及省杰出青年科学基金延续资助项目等，研究方向前沿且科研经费充足，为博士后开展研究提供坚实支撑。" 
                         : "The Computer Vision Team at the College of Computer Science, Zhejiang University of Technology, focuses on the interdisciplinary research of computer vision, smart meteorology, and artificial intelligence. We boast deep scientific accumulation and comprehensive platform facilities. Currently, the team undertakes Key Joint Projects of the National Natural Science Foundation of China, General Programs, and continued funding projects of the Provincial Distinguished Youth Science Foundation."}
                 </p>
+                <div className="mt-4 relative z-10">
+                    <p className="text-slate-600 font-medium">
+                        {language === 'zh' ? "官方域名：" : "Official Domain: "}
+                        <a href="http://aimeteorology.cn" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                            aimeteorology.cn
+                        </a>
+                    </p>
+                </div>
             </motion.div>
         </div>
 
@@ -229,23 +238,16 @@ export const LabOverview: React.FC<{ language: Language }> = ({ language }) => {
 // --- 2. 实验室团队页面 ---
 export const LabTeam: React.FC<{ language: Language }> = ({ language }) => {
     const LEADER = {
-        name: language === 'zh' ? "教授 A" : "Professor A",
-        role: language === 'zh' ? "教授、博士生导师" : "Professor, Doctoral Supervisor",
-        desc: language === 'zh' 
-            ? "主要研究方向为计算机视觉、科学人工智能在气象领域的应用等，主持多项国家级、省部级科研项目，在相关领域发表高水平学术论文多篇，具备丰富的研究生培养与科研指导经验。"
-            : "His main research interests include Computer Vision and AI for Science (Meteorology). He has presided over multiple national and provincial-level research projects, published numerous high-level academic papers, and possesses extensive experience in graduate supervision.",
+        name: teamData.leader.name[language],
+        role: teamData.leader.role[language],
+        desc: teamData.leader.desc[language],
     };
 
-    const MEMBERS = [
-        { name: language === 'zh' ? "学生 A" : "Student A", role: language === 'zh' ? "博士研究生" : "PhD Candidate", type: "Student" },
-        { name: language === 'zh' ? "学生 B" : "Student B", role: language === 'zh' ? "博士研究生" : "PhD Candidate", type: "Student" },
-        { name: language === 'zh' ? "学生 C" : "Student C", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },
-        { name: language === 'zh' ? "学生 D" : "Student D", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },
-        { name: language === 'zh' ? "学生 E" : "Student E", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },
-        { name: language === 'zh' ? "学生 F" : "Student F", role: language === 'zh' ? "硕士研究生" : "Master Student", type: "Student" },
-        { name: language === 'zh' ? "学生 G" : "Student G", role: language === 'zh' ? "本科生" : "Undergraduate", type: "Intern" },
-        { name: language === 'zh' ? "学生 H" : "Student H", role: language === 'zh' ? "本科生" : "Undergraduate", type: "Intern" },
-    ];
+    const MEMBERS = teamData.members.map(member => ({
+        name: member.name[language],
+        role: member.role[language],
+        type: member.type
+    }));
 
   return (
     <PageLayout 

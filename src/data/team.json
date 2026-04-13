@@ -1,0 +1,58 @@
+{
+  "leader": {
+    "name": {
+      "zh": "教授 A",
+      "en": "Professor A"
+    },
+    "role": {
+      "zh": "教授、博士生导师",
+      "en": "Professor, Doctoral Supervisor"
+    },
+    "desc": {
+      "zh": "主要研究方向为计算机视觉、科学人工智能在气象领域的应用等，主持多项国家级、省部级科研项目，在相关领域发表高水平学术论文多篇，具备丰富的研究生培养与科研指导经验。",
+      "en": "His main research interests include Computer Vision and AI for Science (Meteorology). He has presided over multiple national and provincial-level research projects, published numerous high-level academic papers, and possesses extensive experience in graduate supervision."
+    }
+  },
+  "members": [
+    {
+      "name": { "zh": "学生 A", "en": "Student A" },
+      "role": { "zh": "博士研究生", "en": "PhD Candidate" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 B", "en": "Student B" },
+      "role": { "zh": "博士研究生", "en": "PhD Candidate" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 C", "en": "Student C" },
+      "role": { "zh": "硕士研究生", "en": "Master Student" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 D", "en": "Student D" },
+      "role": { "zh": "硕士研究生", "en": "Master Student" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 E", "en": "Student E" },
+      "role": { "zh": "硕士研究生", "en": "Master Student" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 F", "en": "Student F" },
+      "role": { "zh": "硕士研究生", "en": "Master Student" },
+      "type": "Student"
+    },
+    {
+      "name": { "zh": "学生 G", "en": "Student G" },
+      "role": { "zh": "本科生", "en": "Undergraduate" },
+      "type": "Intern"
+    },
+    {
+      "name": { "zh": "学生 H", "en": "Student H" },
+      "role": { "zh": "本科生", "en": "Undergraduate" },
+      "type": "Intern"
+    }
+  ]
+}

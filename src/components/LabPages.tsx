@@ -476,7 +476,7 @@ export const LabPublications: React.FC<{ language: Language }> = ({ language }) 
                       </a>
                       <a 
                         href={paper.url} 
-                        download
+                        download={`${paper.title}.pdf`}
                         className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all text-sm font-bold"
                       >
                         <Download size={16} />

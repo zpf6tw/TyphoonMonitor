@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, Marker, Popup, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { TyphoonPoint, Language } from '../types';
@@ -19,7 +19,44 @@ interface TyphoonMapProps {
   language: Language;
   isRightPanelOpen: boolean; // 添加 prop 以根据侧边栏状态控制布局
   showCloudMap: boolean;
+  cloudFrameUrls?: string[];
 }
+
+const loadedCloudUrls = new Set<string>();
+const loadingCloudPromises = new Map<string, Promise<void>>();
+
+const preloadCloudImage = (url: string): Promise<void> => {
+  if (!url) {
+    return Promise.resolve();
+  }
+
+  if (loadedCloudUrls.has(url)) {
+    return Promise.resolve();
+  }
+
+  const existing = loadingCloudPromises.get(url);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      loadedCloudUrls.add(url);
+      loadingCloudPromises.delete(url);
+      resolve();
+    };
+    image.onerror = () => {
+      loadingCloudPromises.delete(url);
+      reject(new Error(`Failed to preload cloud frame: ${url}`));
+    };
+    image.src = url;
+  });
+
+  loadingCloudPromises.set(url, promise);
+  return promise;
+};
 
 const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression }> = ({ center, bounds }) => {
   const map = useMap();
@@ -68,12 +105,21 @@ const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBounds
 };
 
 // 内风圈保持恒定颜色，防止模拟过程中颜色偏移
-const INNER_RING_COLOR = '#3b82f6'; 
+const INNER_RING_COLOR = '#3b82f6';
 
-export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, language, isRightPanelOpen, showCloudMap }) => {
+export const TyphoonMap: React.FC<TyphoonMapProps> = ({
+  data,
+  currentIndex,
+  language,
+  isRightPanelOpen,
+  showCloudMap,
+  cloudFrameUrls,
+}) => {
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
-  
+  const [activeCloudImageUrl, setActiveCloudImageUrl] = useState<string | null>(null);
+  const latestRequestedUrl = useRef<string | null>(null);
+
   const path = useMemo(() => data.map(p => [p.lat, p.lng] as [number, number]), [data]);
   const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
 
@@ -83,18 +129,99 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
     [60, 200]  // [North, East]
   ];
 
-  // 使用本地 public 目录下的图片
-  const cloudImageUrl = '/cloud_image.png';
+  const availableCloudFrameUrls = cloudFrameUrls && cloudFrameUrls.length > 0
+    ? cloudFrameUrls
+    : [];
+
+  const targetCloudImageUrl = availableCloudFrameUrls.length > 0
+    ? availableCloudFrameUrls[Math.min(currentIndex, availableCloudFrameUrls.length - 1)]
+    : null;
+
+  useEffect(() => {
+    if (!targetCloudImageUrl) {
+      setActiveCloudImageUrl(null);
+      return;
+    }
+
+    let isCancelled = false;
+    latestRequestedUrl.current = targetCloudImageUrl;
+
+    preloadCloudImage(targetCloudImageUrl)
+      .then(() => {
+        if (!isCancelled && latestRequestedUrl.current === targetCloudImageUrl) {
+          setActiveCloudImageUrl(targetCloudImageUrl);
+        }
+      })
+      .catch(() => {
+        // 保持上一帧，避免切换时出现空白闪烁
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [targetCloudImageUrl]);
+
+  useEffect(() => {
+    if (!availableCloudFrameUrls.length) {
+      return;
+    }
+
+    const around: string[] = [];
+    for (let offset = 1; offset <= 2; offset += 1) {
+      const next = currentIndex + offset;
+      const prev = currentIndex - offset;
+
+      if (next < availableCloudFrameUrls.length) {
+        around.push(availableCloudFrameUrls[next]);
+      }
+      if (prev >= 0) {
+        around.push(availableCloudFrameUrls[prev]);
+      }
+    }
+
+    around.forEach(url => {
+      void preloadCloudImage(url).catch(() => undefined);
+    });
+
+    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + 15);
+    let timeoutId: number | undefined;
+
+    const prefetchFarFrames = () => {
+      farAhead.forEach(url => {
+        void preloadCloudImage(url).catch(() => undefined);
+      });
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = (window as Window & {
+        requestIdleCallback: (callback: IdleRequestCallback) => number;
+        cancelIdleCallback: (handle: number) => void;
+      }).requestIdleCallback(() => prefetchFarFrames());
+
+      return () => {
+        (window as Window & {
+          cancelIdleCallback: (handle: number) => void;
+        }).cancelIdleCallback(idleId);
+      };
+    }
+
+    timeoutId = window.setTimeout(prefetchFarFrames, 200);
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [availableCloudFrameUrls, currentIndex]);
 
   return (
     <div className="w-full h-full relative">
-      <MapContainer 
-        center={currentPos} 
-        zoom={5} 
+      <MapContainer
+        center={currentPos}
+        zoom={5}
         minZoom={4}
         maxBounds={imageBounds}
         maxBoundsViscosity={1.0}
-        scrollWheelZoom={true} 
+        scrollWheelZoom={true}
         className="z-0"
         zoomControl={false}
       >
@@ -104,28 +231,28 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
           url="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
           subdomains={['1', '2', '3', '4']}
         />
-        
-        <Polyline 
-          positions={path} 
-          color="#94a3b8" 
-          weight={2} 
-          dashArray="5, 10" 
+
+        <Polyline
+          positions={path}
+          color="#94a3b8"
+          weight={2}
+          dashArray="5, 10"
           opacity={0.6}
         />
-        
-        <Polyline 
-          positions={path.slice(0, currentIndex + 1)} 
-          color="#3b82f6" 
-          weight={3} 
+
+        <Polyline
+          positions={path.slice(0, currentIndex + 1)}
+          color="#3b82f6"
+          weight={3}
           opacity={1}
         />
 
         {/* 卫星云图叠加层 */}
-        {showCloudMap && (
+        {showCloudMap && activeCloudImageUrl && (
           <ImageOverlay
-            url={cloudImageUrl}
+            url={activeCloudImageUrl}
             bounds={imageBounds}
-            opacity={0.5}
+            opacity={1}
             className="satellite-cloud-overlay"
           />
         )}
@@ -134,10 +261,10 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
         <Circle
           center={currentPos}
           radius={currentPoint.outer_radius_pred * 1000}
-          pathOptions={{ 
-            color: '#3b82f6', 
-            weight: 1, 
-            fillOpacity: 0.05, 
+          pathOptions={{
+            color: '#3b82f6',
+            weight: 1,
+            fillOpacity: 0.05,
             fillColor: '#3b82f6',
             className: 'outer-wind-ring'
           }}
@@ -147,10 +274,10 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
         <Circle
           center={currentPos}
           radius={currentPoint.inner_radius_pred * 1000}
-          pathOptions={{ 
-            fillColor: INNER_RING_COLOR, 
-            fillOpacity: 0.4, 
-            color: '#fff', 
+          pathOptions={{
+            fillColor: INNER_RING_COLOR,
+            fillOpacity: 0.4,
+            color: '#fff',
             weight: 2,
             className: 'inner-wind-ring'
           }}
@@ -173,7 +300,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({ data, currentIndex, lang
       </MapContainer>
 
       {/* 内核呼吸动画样式 */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes innerBreathing {
           0% { fill-opacity: 0.35; stroke-width: 1.5; }
           50% { fill-opacity: 0.55; stroke-width: 2.5; }

@@ -3,40 +3,40 @@ const fs = require('fs');
 const generateTyphoonData = (caseName, hours = 24) => {
   const points = [];
   const startPos = {
-    'In-Fa': { lat: 21.5, lng: 128.0, drift: 0.12 },
+    'ATSANI': { lat: 21.5, lng: 128.0, drift: 0.12 },
     'Muifa': { lat: 19.0, lng: 130.0, drift: 0.18 },
   };
 
-  const { lat: baseLat, lng: baseLng, drift } = startPos[caseName] || startPos['In-Fa'];
+  const { lat: baseLat, lng: baseLng, drift } = startPos[caseName] || startPos['ATSANI'];
 
   for (let i = 0; i <= hours; i += 3) {
     const time = `${String(i).padStart(2, '0')}:00`;
     let lat, lng;
     const t = i / hours;
 
-    if (caseName === 'In-Fa') {
-        lat = baseLat + (i * drift * 1.1) + (Math.sin(i * 0.3) * 0.4); 
-        lng = baseLng - (i * drift * 1.4) + (Math.cos(i * 0.3) * 0.4);
+    if (caseName === 'ATSANI') {
+      lat = baseLat + (i * drift * 1.1) + (Math.sin(i * 0.3) * 0.4);
+      lng = baseLng - (i * drift * 1.4) + (Math.cos(i * 0.3) * 0.4);
     } else {
-        lat = baseLat + (i * drift * 0.8) + (i * i * 0.008);
-        lng = baseLng - (i * drift * 1.5) + (i * i * 0.02);
+      lat = baseLat + (i * drift * 0.8) + (i * i * 0.008);
+      lng = baseLng - (i * drift * 1.5) + (i * i * 0.02);
     }
-    
-    const latError = (Math.sin(i * 0.8) * 0.08) + (Math.random() * 0.03 - 0.015); 
+
+    const latError = (Math.sin(i * 0.8) * 0.08) + (Math.random() * 0.03 - 0.015);
     const lngError = (Math.cos(i * 0.8) * 0.08) + (Math.random() * 0.03 - 0.015);
     const lat_pred = lat + latError;
     const lng_pred = lng + lngError;
 
-    const baseIntensity = 35 + Math.sin(i / 8) * 20; 
+    const baseIntensity = 35 + Math.sin(i / 8) * 20;
     const intensity_real = Math.round(baseIntensity + Math.random() * 3);
     const intensity_pred = Math.round(baseIntensity + (Math.sin(i / 5) * 3) + Math.random() * 4 - 2);
-    
+
     const pressure = 1000 - (intensity_real * 1.8);
     const pressure_pred = 1000 - (intensity_pred * 1.8) + (Math.random() * 4 - 2);
-    
+
     const inner_radius_real = Math.round(30 + Math.sin(i / 6) * 8);
     const outer_radius_real = Math.round(200 + Math.cos(i / 10) * 40);
-    
+
     const inner_radius_pred = Math.round(inner_radius_real + (Math.random() * 10 - 5));
     const outer_radius_pred = Math.round(outer_radius_real + (Math.random() * 20 - 10));
 
@@ -60,7 +60,7 @@ const generateTyphoonData = (caseName, hours = 24) => {
 };
 
 const MOCK_CASES = [
-  { id: '1', nameEn: 'Typhoon In-Fa', nameZh: '台风“烟花”', data: generateTyphoonData('In-Fa', 48) },
+  { id: '1', nameEn: 'Typhoon ATSANI', nameZh: '台风“ATSANI”', data: generateTyphoonData('ATSANI', 48) },
   { id: '2', nameEn: 'Typhoon Muifa', nameZh: '台风“梅花”', data: generateTyphoonData('Muifa', 36) }
 ];
 

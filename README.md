@@ -1,7 +1,7 @@
 
 # 智慧气象 AI 平台 (MeteoAI)
 
-**官方域名 / Official Domain:** [aimeteorology.cn](http://aimeteorology.cn)
+**域名:** [aimeteorology.cn](http://www.aimeteorology.cn)
 
 ## 运行项目 (Run Locally)
 

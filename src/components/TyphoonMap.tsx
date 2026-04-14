@@ -21,22 +21,30 @@ interface TyphoonMapProps {
   showCloudMap: boolean;
   cloudFrameUrls?: string[];
   isPlaying?: boolean;
+  isScrubbing?: boolean;
   onCloudFrameLoaded?: (frameIndex: number) => void;
 }
 
 const loadedCloudUrls = new Set<string>();
 const loadingCloudPromises = new Map<string, Promise<void>>();
 
-const preloadCloudImage = (url: string): Promise<void> => {
+interface PreloadCloudOptions {
+  waitForDecode?: boolean;
+}
+
+const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Promise<void> => {
   if (!url) {
     return Promise.resolve();
   }
+
+  const { waitForDecode = true } = options;
+  const promiseKey = `${url}|${waitForDecode ? 'decode' : 'raw'}`;
 
   if (loadedCloudUrls.has(url)) {
     return Promise.resolve();
   }
 
-  const existing = loadingCloudPromises.get(url);
+  const existing = loadingCloudPromises.get(promiseKey);
   if (existing) {
     return existing;
   }
@@ -45,31 +53,34 @@ const preloadCloudImage = (url: string): Promise<void> => {
     const image = new Image();
     image.decoding = 'async';
     image.onload = async () => {
-      // 先完成解码，尽量减少切帧瞬间主线程卡顿。
-      try {
-        if (typeof image.decode === 'function') {
-          await image.decode();
+      // 播放时优先解码平滑，拖动跳转时优先快速出图。
+      if (waitForDecode) {
+        try {
+          if (typeof image.decode === 'function') {
+            await image.decode();
+          }
+        } catch {
+          // decode 失败时退回到普通 onload 结果
         }
-      } catch {
-        // decode 失败时退回到普通 onload 结果
       }
 
       loadedCloudUrls.add(url);
-      loadingCloudPromises.delete(url);
+      loadingCloudPromises.delete(`${url}|decode`);
+      loadingCloudPromises.delete(`${url}|raw`);
       resolve();
     };
     image.onerror = () => {
-      loadingCloudPromises.delete(url);
+      loadingCloudPromises.delete(promiseKey);
       reject(new Error(`Failed to preload cloud frame: ${url}`));
     };
     image.src = url;
   });
 
-  loadingCloudPromises.set(url, promise);
+  loadingCloudPromises.set(promiseKey, promise);
   return promise;
 };
 
-const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression, isPlaying: boolean }> = ({ center, bounds, isPlaying }) => {
+const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression, isPlaying: boolean, isScrubbing: boolean }> = ({ center, bounds, isPlaying, isScrubbing }) => {
   const map = useMap();
 
   // 处理边界和缩放限制
@@ -108,9 +119,13 @@ const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBounds
 
   // 处理中心点平移
   useEffect(() => {
+    if (isScrubbing) {
+      return;
+    }
+
     // 连续播放时禁用平移动画，降低卡顿风险。
     map.panTo(center, { animate: !isPlaying, duration: isPlaying ? 0 : 0.8 });
-  }, [center, map, isPlaying]);
+  }, [center, map, isPlaying, isScrubbing]);
 
   return null;
 };
@@ -126,6 +141,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   showCloudMap,
   cloudFrameUrls,
   isPlaying = false,
+  isScrubbing = false,
   onCloudFrameLoaded,
 }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
@@ -169,6 +185,36 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     ? availableCloudFrameUrls[Math.min(currentIndex, availableCloudFrameUrls.length - 1)]
     : null;
 
+  const targetCloudFrameIndex = availableCloudFrameUrls.length > 0
+    ? Math.min(currentIndex, availableCloudFrameUrls.length - 1)
+    : -1;
+
+  const findNearestLoadedUrl = (targetIndex: number): string | null => {
+    if (!availableCloudFrameUrls.length || targetIndex < 0) {
+      return null;
+    }
+
+    for (let offset = 0; offset < availableCloudFrameUrls.length; offset += 1) {
+      const left = targetIndex - offset;
+      if (left >= 0) {
+        const leftUrl = availableCloudFrameUrls[left];
+        if (loadedCloudUrls.has(leftUrl)) {
+          return leftUrl;
+        }
+      }
+
+      const right = targetIndex + offset;
+      if (right < availableCloudFrameUrls.length) {
+        const rightUrl = availableCloudFrameUrls[right];
+        if (loadedCloudUrls.has(rightUrl)) {
+          return rightUrl;
+        }
+      }
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     if (!targetCloudImageUrl) {
       setActiveCloudImageUrl(null);
@@ -178,7 +224,12 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     let isCancelled = false;
     latestRequestedUrl.current = targetCloudImageUrl;
 
-    preloadCloudImage(targetCloudImageUrl)
+    const nearestLoadedUrl = findNearestLoadedUrl(targetCloudFrameIndex);
+    if (nearestLoadedUrl) {
+      setActiveCloudImageUrl(nearestLoadedUrl);
+    }
+
+    preloadCloudImage(targetCloudImageUrl, { waitForDecode: isPlaying && !isScrubbing })
       .then(() => {
         if (!isCancelled && latestRequestedUrl.current === targetCloudImageUrl) {
           setActiveCloudImageUrl(targetCloudImageUrl);
@@ -193,7 +244,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [targetCloudImageUrl]);
+  }, [targetCloudImageUrl, targetCloudFrameIndex, isPlaying, isScrubbing]);
 
   useEffect(() => {
     if (!availableCloudFrameUrls.length) {
@@ -338,7 +389,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           iconAnchor: [8, 8]
         })} />
 
-        <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} />
+        <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} isScrubbing={isScrubbing} />
       </MapContainer>
 
       {/* 内核呼吸动画样式 */}

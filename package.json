@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "convert:cloud": "node tools/convert-cloud-frames.mjs --cleanup",
+    "convert:cloud:overwrite": "node tools/convert-cloud-frames.mjs --overwrite --cleanup",
+    "convert:cloud:keep-source": "node tools/convert-cloud-frames.mjs --keep-source"
   },
   "dependencies": {
     "framer-motion": "^12.23.26",
@@ -21,6 +24,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

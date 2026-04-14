@@ -6,12 +6,12 @@ export interface CloudFrameMeta {
     url: string;
 }
 
-const ATSANI_FRAME_MODULES = import.meta.glob('../../image/ATSANI/*.png', {
+const ATSANI_FRAME_MODULES = import.meta.glob('../../image/ATSANI/*.webp', {
     eager: true,
     import: 'default',
 }) as Record<string, string>;
 
-const FRAME_FILE_PATTERN = /NC_H08_(\d{8})_(\d{4})_.*\.png$/i;
+const FRAME_FILE_PATTERN = /NC_H08_(\d{8})_(\d{4})_.*\.webp$/i;
 
 const formatFullLabel = (dateCode: string, timeCode: string): string => {
     const year = dateCode.slice(0, 4);

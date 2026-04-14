@@ -172,6 +172,7 @@ const App: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState(MOCK_CASES[0].id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   const readyFrameIndicesRef = useRef<Set<number>>(new Set());
   const [loadedFrameCount, setLoadedFrameCount] = useState(0);
 
@@ -290,6 +291,14 @@ const App: React.FC = () => {
 
   const t = (key: string) => TRANSLATIONS[key][language];
 
+  const startScrubbing = useCallback(() => {
+    setIsScrubbing(true);
+  }, []);
+
+  const stopScrubbing = useCallback(() => {
+    setIsScrubbing(false);
+  }, []);
+
   useEffect(() => {
     if (!timelineData.length) {
       return;
@@ -304,6 +313,24 @@ const App: React.FC = () => {
     readyFrameIndicesRef.current = new Set<number>();
     setLoadedFrameCount(0);
   }, [selectedCaseId, cloudFrameUrls.length]);
+
+  useEffect(() => {
+    if (!isScrubbing) {
+      return;
+    }
+
+    const handlePointerRelease = () => {
+      setIsScrubbing(false);
+    };
+
+    window.addEventListener('pointerup', handlePointerRelease);
+    window.addEventListener('pointercancel', handlePointerRelease);
+
+    return () => {
+      window.removeEventListener('pointerup', handlePointerRelease);
+      window.removeEventListener('pointercancel', handlePointerRelease);
+    };
+  }, [isScrubbing]);
 
   useEffect(() => {
     let interval: any;
@@ -378,6 +405,7 @@ const App: React.FC = () => {
                 showCloudMap={showCloudMap}
                 cloudFrameUrls={cloudFrameUrls}
                 isPlaying={isPlaying}
+                isScrubbing={isScrubbing}
                 onCloudFrameLoaded={handleCloudFrameLoaded}
               />
             </div>
@@ -577,6 +605,11 @@ const App: React.FC = () => {
                     min="0"
                     max={Math.max(0, timelineData.length - 1)}
                     value={currentIndex}
+                    onPointerDown={startScrubbing}
+                    onPointerUp={stopScrubbing}
+                    onPointerCancel={stopScrubbing}
+                    onTouchStart={startScrubbing}
+                    onTouchEnd={stopScrubbing}
                     onChange={handleTimelineChange}
                     className="relative z-10 w-full h-1.5 bg-slate-200/50 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />

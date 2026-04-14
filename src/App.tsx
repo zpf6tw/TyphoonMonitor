@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TyphoonMap } from './components/TyphoonMap';
 import { MetricsChart } from './components/MetricsChart';
@@ -119,6 +119,7 @@ const CaseSelectorDropdown: React.FC<{
 };
 
 const lerp = (start: number, end: number, ratio: number): number => start + (end - start) * ratio;
+const PLAYBACK_INTERVAL_MS = 700;
 
 const alignDataToFrameCount = (
   baseData: TyphoonPoint[],
@@ -171,6 +172,8 @@ const App: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState(MOCK_CASES[0].id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const readyFrameIndicesRef = useRef<Set<number>>(new Set());
+  const [loadedFrameCount, setLoadedFrameCount] = useState(0);
 
   // 导航状态
   const [currentView, setCurrentView] = useState<ViewType>('map');
@@ -225,8 +228,26 @@ const App: React.FC = () => {
     [activeCloudFrames]
   );
 
+  const handleCloudFrameLoaded = useCallback((frameIndex: number) => {
+    const readyFrames = readyFrameIndicesRef.current;
+    if (frameIndex < 0 || frameIndex >= timelineData.length || readyFrames.has(frameIndex)) {
+      return;
+    }
+
+    readyFrames.add(frameIndex);
+    setLoadedFrameCount(readyFrames.size);
+  }, [timelineData.length]);
+
   const currentPoint = timelineData[currentIndex] || timelineData[0];
   const currentFrameDetail = activeCloudFrames[currentIndex]?.fullLabel;
+  const nextFrameIndex = Math.min(currentIndex + 1, Math.max(0, timelineData.length - 1));
+  const isBuffering = isPlaying
+    && cloudFrameUrls.length > 0
+    && currentIndex < timelineData.length - 1
+    && !readyFrameIndicesRef.current.has(nextFrameIndex);
+  const bufferProgress = cloudFrameUrls.length > 0
+    ? Math.min(100, Math.round((loadedFrameCount / cloudFrameUrls.length) * 100))
+    : 100;
 
   const timelineLabelStep = useMemo(() => {
     if (timelineLabels.length <= 10) {
@@ -280,6 +301,11 @@ const App: React.FC = () => {
   }, [currentIndex, timelineData.length]);
 
   useEffect(() => {
+    readyFrameIndicesRef.current = new Set<number>();
+    setLoadedFrameCount(0);
+  }, [selectedCaseId, cloudFrameUrls.length]);
+
+  useEffect(() => {
     let interval: any;
     if (isPlaying && currentView === 'map') {
       interval = setInterval(() => {
@@ -288,12 +314,31 @@ const App: React.FC = () => {
             setIsPlaying(false);
             return prev;
           }
-          return prev + 1;
+
+          if (!cloudFrameUrls.length) {
+            return prev + 1;
+          }
+
+          const next = prev + 1;
+          const readyFrames = readyFrameIndicesRef.current;
+          if (readyFrames.has(next)) {
+            return next;
+          }
+
+          // 若下一帧未就绪，允许小幅跳帧到最近已缓冲帧，降低“卡住等待”感。
+          const maxCandidate = Math.min(timelineData.length - 1, next + 2);
+          for (let candidate = maxCandidate; candidate > next; candidate -= 1) {
+            if (readyFrames.has(candidate)) {
+              return candidate;
+            }
+          }
+
+          return prev;
         });
-      }, 1000);
+      }, PLAYBACK_INTERVAL_MS);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, timelineData.length, currentView]);
+  }, [isPlaying, timelineData.length, currentView, cloudFrameUrls.length]);
 
   const handleTimelineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextIndex = Number.parseInt(e.target.value, 10);
@@ -332,6 +377,8 @@ const App: React.FC = () => {
                 isRightPanelOpen={isRightPanelOpen}
                 showCloudMap={showCloudMap}
                 cloudFrameUrls={cloudFrameUrls}
+                isPlaying={isPlaying}
+                onCloudFrameLoaded={handleCloudFrameLoaded}
               />
             </div>
 
@@ -490,7 +537,11 @@ const App: React.FC = () => {
                     </div>
                     <div className="whitespace-nowrap">
                       <h4 className="text-sm font-bold text-slate-800">{t('timeline')}</h4>
-                      <p className="text-[10px] text-slate-400 font-medium">{t('zoom_hint')}</p>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {isBuffering
+                          ? (language === 'en' ? `Buffering ${bufferProgress}%` : `缓冲中 ${bufferProgress}%`)
+                          : t('zoom_hint')}
+                      </p>
                     </div>
                   </div>
 

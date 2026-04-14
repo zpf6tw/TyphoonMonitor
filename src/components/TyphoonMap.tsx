@@ -20,6 +20,8 @@ interface TyphoonMapProps {
   isRightPanelOpen: boolean; // 添加 prop 以根据侧边栏状态控制布局
   showCloudMap: boolean;
   cloudFrameUrls?: string[];
+  isPlaying?: boolean;
+  onCloudFrameLoaded?: (frameIndex: number) => void;
 }
 
 const loadedCloudUrls = new Set<string>();
@@ -42,7 +44,16 @@ const preloadCloudImage = (url: string): Promise<void> => {
   const promise = new Promise<void>((resolve, reject) => {
     const image = new Image();
     image.decoding = 'async';
-    image.onload = () => {
+    image.onload = async () => {
+      // 先完成解码，尽量减少切帧瞬间主线程卡顿。
+      try {
+        if (typeof image.decode === 'function') {
+          await image.decode();
+        }
+      } catch {
+        // decode 失败时退回到普通 onload 结果
+      }
+
       loadedCloudUrls.add(url);
       loadingCloudPromises.delete(url);
       resolve();
@@ -58,7 +69,7 @@ const preloadCloudImage = (url: string): Promise<void> => {
   return promise;
 };
 
-const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression }> = ({ center, bounds }) => {
+const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression, isPlaying: boolean }> = ({ center, bounds, isPlaying }) => {
   const map = useMap();
 
   // 处理边界和缩放限制
@@ -97,9 +108,9 @@ const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBounds
 
   // 处理中心点平移
   useEffect(() => {
-    // 持续时间略小于 1000ms 间隔，以获得更平滑的视觉连续性
-    map.panTo(center, { animate: true, duration: 0.8 });
-  }, [center, map]);
+    // 连续播放时禁用平移动画，降低卡顿风险。
+    map.panTo(center, { animate: !isPlaying, duration: isPlaying ? 0 : 0.8 });
+  }, [center, map, isPlaying]);
 
   return null;
 };
@@ -114,6 +125,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   isRightPanelOpen,
   showCloudMap,
   cloudFrameUrls,
+  isPlaying = false,
+  onCloudFrameLoaded,
 }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
@@ -133,6 +146,25 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     ? cloudFrameUrls
     : [];
 
+  const cloudUrlIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    availableCloudFrameUrls.forEach((url, index) => {
+      map.set(url, index);
+    });
+    return map;
+  }, [availableCloudFrameUrls]);
+
+  const notifyCloudFrameLoaded = (url: string) => {
+    if (!onCloudFrameLoaded) {
+      return;
+    }
+
+    const frameIndex = cloudUrlIndexMap.get(url);
+    if (frameIndex !== undefined) {
+      onCloudFrameLoaded(frameIndex);
+    }
+  };
+
   const targetCloudImageUrl = availableCloudFrameUrls.length > 0
     ? availableCloudFrameUrls[Math.min(currentIndex, availableCloudFrameUrls.length - 1)]
     : null;
@@ -151,6 +183,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         if (!isCancelled && latestRequestedUrl.current === targetCloudImageUrl) {
           setActiveCloudImageUrl(targetCloudImageUrl);
         }
+
+        notifyCloudFrameLoaded(targetCloudImageUrl);
       })
       .catch(() => {
         // 保持上一帧，避免切换时出现空白闪烁
@@ -180,15 +214,23 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     }
 
     around.forEach(url => {
-      void preloadCloudImage(url).catch(() => undefined);
+      void preloadCloudImage(url)
+        .then(() => {
+          notifyCloudFrameLoaded(url);
+        })
+        .catch(() => undefined);
     });
 
-    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + 15);
+    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + 25);
     let timeoutId: number | undefined;
 
     const prefetchFarFrames = () => {
       farAhead.forEach(url => {
-        void preloadCloudImage(url).catch(() => undefined);
+        void preloadCloudImage(url)
+          .then(() => {
+            notifyCloudFrameLoaded(url);
+          })
+          .catch(() => undefined);
       });
     };
 
@@ -296,7 +338,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           iconAnchor: [8, 8]
         })} />
 
-        <MapController center={currentPos} bounds={imageBounds} />
+        <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} />
       </MapContainer>
 
       {/* 内核呼吸动画样式 */}

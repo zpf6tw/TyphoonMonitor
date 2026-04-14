@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, Circle, Marker, Popup, useMap, ImageOverlay } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { TyphoonPoint, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
@@ -132,54 +132,6 @@ const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBounds
 
 // 内风圈保持恒定颜色，防止模拟过程中颜色偏移
 const INNER_RING_COLOR = '#3b82f6';
-
-const CENTER_MARKER_BASE_SIZE = 16;
-const CENTER_MARKER_BASE_ZOOM = 5;
-const CENTER_MARKER_MIN_SIZE = 3;
-const CENTER_MARKER_MAX_SIZE = 24;
-
-const getCenterMarkerSize = (zoom: number): number => {
-  const scaledSize = CENTER_MARKER_BASE_SIZE * Math.pow(2, zoom - CENTER_MARKER_BASE_ZOOM);
-  return Math.max(CENTER_MARKER_MIN_SIZE, Math.min(CENTER_MARKER_MAX_SIZE, scaledSize));
-};
-
-const TyphoonCenterMarker: React.FC<{ position: [number, number] }> = ({ position }) => {
-  const map = useMap();
-  const [zoom, setZoom] = useState<number>(() => map.getZoom());
-
-  useEffect(() => {
-    const updateZoom = () => {
-      setZoom(map.getZoom());
-    };
-
-    map.on('zoom', updateZoom);
-    map.on('zoomend', updateZoom);
-
-    return () => {
-      map.off('zoom', updateZoom);
-      map.off('zoomend', updateZoom);
-    };
-  }, [map]);
-
-  const markerSize = Math.round(getCenterMarkerSize(zoom));
-  const borderWidth = Math.max(1, Math.round(markerSize / 8));
-
-  const markerIcon = useMemo(() => {
-    return new L.DivIcon({
-      className: 'custom-div-icon',
-      html: `
-        <div style="position: relative; display: flex; width: ${markerSize}px; height: ${markerSize}px;">
-          <span class="center-marker-ping" style="position: absolute; inset: 0; display: inline-flex; border-radius: 9999px; background: #60a5fa; opacity: 0.75;"></span>
-          <span style="position: relative; display: inline-flex; width: ${markerSize}px; height: ${markerSize}px; border-radius: 9999px; background: #2563eb; border: ${borderWidth}px solid #ffffff; box-sizing: border-box;"></span>
-        </div>
-      `,
-      iconSize: [markerSize, markerSize],
-      iconAnchor: [markerSize / 2, markerSize / 2],
-    });
-  }, [markerSize, borderWidth]);
-
-  return <Marker position={position} icon={markerIcon} interactive={false} />;
-};
 
 export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   data,
@@ -424,9 +376,6 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           }}
         />
 
-        {/* 当前位置脉冲标记（随地图缩放动态变化） */}
-        <TyphoonCenterMarker position={currentPos} />
-
         <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} isScrubbing={isScrubbing} />
       </MapContainer>
 
@@ -438,16 +387,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           50% { fill-opacity: 0.55; stroke-width: 2.5; }
           100% { fill-opacity: 0.35; stroke-width: 1.5; }
         }
-        @keyframes centerPing {
-          0% { transform: scale(1); opacity: 0.75; }
-          75% { transform: scale(1.9); opacity: 0; }
-          100% { transform: scale(1.9); opacity: 0; }
-        }
         .inner-wind-ring {
           animation: innerBreathing 2.5s ease-in-out infinite;
-        }
-        .center-marker-ping {
-          animation: centerPing 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
       `}} />
     </div>

@@ -119,7 +119,7 @@ const CaseSelectorDropdown: React.FC<{
 };
 
 const lerp = (start: number, end: number, ratio: number): number => start + (end - start) * ratio;
-const PLAYBACK_INTERVAL_MS = 700;
+const PLAYBACK_INTERVAL_MS = 1200;
 
 const alignDataToFrameCount = (
   baseData: TyphoonPoint[],
@@ -240,7 +240,7 @@ const App: React.FC = () => {
   }, [timelineData.length]);
 
   const currentPoint = timelineData[currentIndex] || timelineData[0];
-  const currentFrameDetail = activeCloudFrames[currentIndex]?.fullLabel;
+  const currentUtcLabel = activeCloudFrames[currentIndex]?.fullLabel || timelineLabels[currentIndex] || '--:--';
   const nextFrameIndex = Math.min(currentIndex + 1, Math.max(0, timelineData.length - 1));
   const isBuffering = isPlaying
     && cloudFrameUrls.length > 0
@@ -352,14 +352,6 @@ const App: React.FC = () => {
             return next;
           }
 
-          // 若下一帧未就绪，允许小幅跳帧到最近已缓冲帧，降低“卡住等待”感。
-          const maxCandidate = Math.min(timelineData.length - 1, next + 2);
-          for (let candidate = maxCandidate; candidate > next; candidate -= 1) {
-            if (readyFrames.has(candidate)) {
-              return candidate;
-            }
-          }
-
           return prev;
         });
       }, PLAYBACK_INTERVAL_MS);
@@ -400,8 +392,6 @@ const App: React.FC = () => {
               <TyphoonMap
                 data={timelineData}
                 currentIndex={currentIndex}
-                language={language}
-                isRightPanelOpen={isRightPanelOpen}
                 showCloudMap={showCloudMap}
                 cloudFrameUrls={cloudFrameUrls}
                 isPlaying={isPlaying}
@@ -576,10 +566,7 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 shrink-0">
                     <div className="text-right whitespace-nowrap">
                       <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{language === 'en' ? 'UTC' : '协调世界时'}</p>
-                      <p className="text-sm font-bold text-blue-600">{timelineLabels[currentIndex] || '--:--'}</p>
-                      {currentFrameDetail && (
-                        <p className="text-[10px] text-slate-400">{currentFrameDetail}</p>
-                      )}
+                      <p className="text-sm font-bold text-blue-600">{currentUtcLabel}</p>
                     </div>
                     <div className="h-8 w-px bg-slate-200 shrink-0" />
                     <div className="flex gap-1 shrink-0">
@@ -736,7 +723,7 @@ const App: React.FC = () => {
                 >
                   <div className="space-y-4">
                     <div className="bg-slate-50/80 backdrop-blur-sm p-4 rounded-xl border border-slate-100 font-serif relative">
-                      <p className="text-[9px] text-slate-400 font-mono mb-2 uppercase tracking-tighter">Holland Wind Field Model</p>
+                      <p className="text-[9px] text-slate-400 font-mono mb-2 uppercase tracking-tighter">{t('holland_model')}</p>
                       <div className="text-[15px] italic text-slate-800 leading-tight tracking-tight py-1">
                         r<sup>B</sup> ln[(p<sub>n</sub> - p<sub>c</sub>) / (p<sub>r</sub> - p<sub>c</sub>)] = A
                       </div>

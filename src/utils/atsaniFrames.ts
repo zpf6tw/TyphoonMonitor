@@ -6,14 +6,10 @@ export interface CloudFrameMeta {
     url: string;
 }
 
-export type StormCloudKey = 'ATSANI' | 'BAVI';
+export type StormCloudKey = 'ATSANI';
 
 const STORM_FRAME_MODULES: Record<StormCloudKey, Record<string, string>> = {
     ATSANI: import.meta.glob('../../image/ATSANI/*.webp', {
-        eager: true,
-        import: 'default',
-    }) as Record<string, string>,
-    BAVI: import.meta.glob('../../image/BAVI/*.webp', {
         eager: true,
         import: 'default',
     }) as Record<string, string>,
@@ -66,7 +62,6 @@ const buildCloudFrames = (modules: Record<string, string>): CloudFrameMeta[] => 
 
 export const CLOUD_FRAMES_BY_STORM: Record<StormCloudKey, CloudFrameMeta[]> = {
     ATSANI: buildCloudFrames(STORM_FRAME_MODULES.ATSANI),
-    BAVI: buildCloudFrames(STORM_FRAME_MODULES.BAVI),
 };
 
 // 兼容历史引用

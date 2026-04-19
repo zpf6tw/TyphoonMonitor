@@ -6,7 +6,6 @@ import {
   Cloud, 
   ChevronDown, 
   ChevronRight, 
-  Activity,
   Globe,
   PanelLeftClose,
   Building2,

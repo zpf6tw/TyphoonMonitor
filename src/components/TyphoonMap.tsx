@@ -2,8 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
-import { TyphoonPoint, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TyphoonPoint } from '../types';
 
 // 修复默认标记图标
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,8 +15,6 @@ L.Icon.Default.mergeOptions({
 interface TyphoonMapProps {
   data: TyphoonPoint[];
   currentIndex: number;
-  language: Language;
-  isRightPanelOpen: boolean; // 添加 prop 以根据侧边栏状态控制布局
   showCloudMap: boolean;
   cloudFrameUrls?: string[];
   isPlaying?: boolean;
@@ -38,6 +35,12 @@ interface MapControllerProps {
   isPlaying: boolean;
   isScrubbing: boolean;
 }
+
+// 固定边界使用稳定引用，避免每次渲染触发地图约束与覆盖层重置。
+const FIXED_IMAGE_BOUNDS: L.LatLngBoundsLiteral = [
+  [-60, 80],
+  [60, 200],
+];
 
 const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Promise<void> => {
   if (!url) {
@@ -126,12 +129,11 @@ const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying
 
   // 处理中心点平移
   useEffect(() => {
-    if (isScrubbing) {
+    if (isScrubbing || isPlaying) {
       return;
     }
 
-    // 连续播放时禁用平移动画，降低卡顿风险。
-    map.panTo(center, { animate: !isPlaying, duration: isPlaying ? 0 : 0.8 });
+    map.panTo(center, { animate: true, duration: 0.8 });
   }, [center, map, isPlaying, isScrubbing]);
 
   return null;
@@ -143,15 +145,12 @@ const INNER_RING_COLOR = '#3b82f6';
 export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   data,
   currentIndex,
-  language,
-  isRightPanelOpen,
   showCloudMap,
   cloudFrameUrls,
   isPlaying = false,
   isScrubbing = false,
   onCloudFrameLoaded,
 }) => {
-  const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
   const [activeCloudImageUrl, setActiveCloudImageUrl] = useState<string | null>(null);
   const latestRequestedUrl = useRef<string | null>(null);
@@ -160,10 +159,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
 
   // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
-  const imageBounds: L.LatLngBoundsLiteral = [
-    [-60, 80], // [South, West]
-    [60, 200]  // [North, East]
-  ];
+  const imageBounds = FIXED_IMAGE_BOUNDS;
 
   const availableCloudFrameUrls = cloudFrameUrls && cloudFrameUrls.length > 0
     ? cloudFrameUrls
@@ -279,7 +275,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         .catch(() => undefined);
     });
 
-    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + 25);
+    const farAheadWindow = isPlaying ? 8 : 25;
+    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + farAheadWindow);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const prefetchFarFrames = () => {
@@ -305,13 +302,13 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       };
     }
 
-    timeoutId = setTimeout(prefetchFarFrames, 200);
+    timeoutId = setTimeout(prefetchFarFrames, isPlaying ? 350 : 200);
     return () => {
       if (timeoutId !== undefined) {
         clearTimeout(timeoutId);
       }
     };
-  }, [availableCloudFrameUrls, currentIndex]);
+  }, [availableCloudFrameUrls, currentIndex, isPlaying]);
 
   return (
     <div className="w-full h-full relative">

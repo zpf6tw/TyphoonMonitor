@@ -14,7 +14,6 @@ import {
   Wind,
   CloudRain,
   Bot,
-  Activity,
   Github,
   MapPin,
   Phone,

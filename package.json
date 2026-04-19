@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "sync:typhoon-data": "node tools/sync-typhoon-data.mjs",
     "convert:cloud": "node tools/convert-cloud-frames.mjs --cleanup",
     "convert:cloud:overwrite": "node tools/convert-cloud-frames.mjs --overwrite --cleanup",
     "convert:cloud:keep-source": "node tools/convert-cloud-frames.mjs --keep-source"
@@ -22,7 +23,10 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^22.14.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",

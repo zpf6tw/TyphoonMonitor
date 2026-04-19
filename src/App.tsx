@@ -7,7 +7,7 @@ import { LabOverview, LabTeam, LabResearch, LabPublications } from './components
 import { MOCK_CASES } from './utils/dataGenerator';
 import { Language, TyphoonPoint, ViewType } from './types';
 import { TRANSLATIONS } from './constants';
-import { ATSANI_CLOUD_FRAMES } from './utils/atsaniFrames';
+import { CLOUD_FRAMES_BY_STORM, resolveStormCloudKey } from './utils/atsaniFrames';
 import {
   Play,
   Pause,
@@ -199,14 +199,14 @@ const App: React.FC = () => {
     [selectedCaseId]
   );
 
-  const isAtsaniCase = useMemo(
-    () => selectedCase.nameEn.toLowerCase().includes('atsani'),
-    [selectedCase.nameEn]
+  const activeStormCloudKey = useMemo(
+    () => resolveStormCloudKey(selectedCase.stormCode, selectedCase.nameEn),
+    [selectedCase.stormCode, selectedCase.nameEn]
   );
 
   const activeCloudFrames = useMemo(
-    () => (isAtsaniCase ? ATSANI_CLOUD_FRAMES : []),
-    [isAtsaniCase]
+    () => (activeStormCloudKey ? CLOUD_FRAMES_BY_STORM[activeStormCloudKey] : []),
+    [activeStormCloudKey]
   );
 
   const timelineLabels = useMemo(() => {

@@ -6,10 +6,18 @@ export interface CloudFrameMeta {
     url: string;
 }
 
-const ATSANI_FRAME_MODULES = import.meta.glob('../../image/ATSANI/*.webp', {
-    eager: true,
-    import: 'default',
-}) as Record<string, string>;
+export type StormCloudKey = 'ATSANI' | 'BAVI';
+
+const STORM_FRAME_MODULES: Record<StormCloudKey, Record<string, string>> = {
+    ATSANI: import.meta.glob('../../image/ATSANI/*.webp', {
+        eager: true,
+        import: 'default',
+    }) as Record<string, string>,
+    BAVI: import.meta.glob('../../image/BAVI/*.webp', {
+        eager: true,
+        import: 'default',
+    }) as Record<string, string>,
+};
 
 const FRAME_FILE_PATTERN = /NC_H08_(\d{8})_(\d{4})_.*\.webp$/i;
 
@@ -49,7 +57,35 @@ const parseFrame = (filePath: string, url: string): CloudFrameMeta | null => {
     };
 };
 
-export const ATSANI_CLOUD_FRAMES: CloudFrameMeta[] = Object.entries(ATSANI_FRAME_MODULES)
-    .map(([filePath, url]) => parseFrame(filePath, url))
-    .filter((frame): frame is CloudFrameMeta => frame !== null)
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+const buildCloudFrames = (modules: Record<string, string>): CloudFrameMeta[] => {
+    return Object.entries(modules)
+        .map(([filePath, url]) => parseFrame(filePath, url))
+        .filter((frame): frame is CloudFrameMeta => frame !== null)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+};
+
+export const CLOUD_FRAMES_BY_STORM: Record<StormCloudKey, CloudFrameMeta[]> = {
+    ATSANI: buildCloudFrames(STORM_FRAME_MODULES.ATSANI),
+    BAVI: buildCloudFrames(STORM_FRAME_MODULES.BAVI),
+};
+
+// 兼容历史引用
+export const ATSANI_CLOUD_FRAMES: CloudFrameMeta[] = CLOUD_FRAMES_BY_STORM.ATSANI;
+
+export const resolveStormCloudKey = (stormCode?: string, nameEn?: string): StormCloudKey | null => {
+    const code = String(stormCode || '').toUpperCase();
+    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM) as StormCloudKey[]) {
+        if (code.startsWith(`${key}_`) || code === key) {
+            return key;
+        }
+    }
+
+    const normalizedName = String(nameEn || '').toUpperCase();
+    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM) as StormCloudKey[]) {
+        if (normalizedName.includes(key)) {
+            return key;
+        }
+    }
+
+    return null;
+};

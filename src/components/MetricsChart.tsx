@@ -254,9 +254,9 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
               <ReferenceLine x={currentPoint?.time} stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" />
               <Legend iconType="plainline" wrapperStyle={{ fontSize: '10px', marginTop: '-5px' }} />
 
-              {/* 内半径 */}
+              {/* RMW */}
               <Line
-                name={`${t('traditional_method')} (Inner)`}
+                name={`${t('traditional_method')} (${t('rmw_short')})`}
                 type="monotone"
                 dataKey="inner_radius_real"
                 stroke="#f59e0b"
@@ -264,7 +264,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
               />
               <Line
-                name={`${t('idol_model')} (Inner)`}
+                name={`${t('idol_model')} (${t('rmw_short')})`}
                 type="monotone"
                 dataKey="inner_radius_pred"
                 stroke="#fcd34d"
@@ -273,9 +273,9 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
               />
 
-              {/* 外半径 */}
+              {/* R34 */}
               <Line
-                name={`${t('traditional_method')} (Outer)`}
+                name={`${t('traditional_method')} (${t('r34_short')})`}
                 type="monotone"
                 dataKey="outer_radius_real"
                 stroke="#10b981"
@@ -283,7 +283,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
               />
               <Line
-                name={`${t('idol_model')} (Outer)`}
+                name={`${t('idol_model')} (${t('r34_short')})`}
                 type="monotone"
                 dataKey="outer_radius_pred"
                 stroke="#6ee7b7"

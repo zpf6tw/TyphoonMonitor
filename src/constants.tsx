@@ -20,8 +20,8 @@ export const TRANSLATIONS: Translations = {
   prediction: { en: "IDOL Prediction", zh: "IDOL 模型预测" },
   wind_speed: { en: "Wind Speed (m/s)", zh: "风速 (m/s)" },
   pressure: { en: "Pressure (hPa)", zh: "中心气压 (hPa)" },
-  inner_radius_label: { en: "Inner Wind Ring Radius", zh: "风圈内径" },
-  outer_radius_label: { en: "Outer Wind Ring Radius", zh: "风圈外径" },
+  inner_radius_label: { en: "Inner Wind Radius: Radius of Maximum Wind (RMW)", zh: "内风圈：最大风半径 RMW" },
+  outer_radius_label: { en: "Outer Wind Radius: 34-kt Wind Radius (R34)", zh: "外风圈：34kt 风圈半径 R34" },
   cloud_view: { en: "Satellite Cloud Imagery", zh: "实时卫星云图" },
   satellite_ir: { en: "Himawari-8 IR (Raw)", zh: "葵花8号红外云图" },
   error_metric: { en: "RMSE Error:", zh: "均方根误差 (RMSE):" },
@@ -33,11 +33,13 @@ export const TRANSLATIONS: Translations = {
   idol_model: { en: "IDOL", zh: "IDOL模型" },
   lat: { en: "Lat", zh: "纬度" },
   lng: { en: "Lng", zh: "经度" },
-  r_inner: { en: "R-Inner", zh: "风圈内径" },
-  r_outer: { en: "R-Outer", zh: "风圈外径" },
-  physics_desc: { 
-    en: "AI estimation constrained by Holland's gradient wind balance and pressure-wind relationship priors.", 
-    zh: "AI强度评估通过Holland梯度风平衡及气压-风速关系先验进行约束。" 
+  r_inner: { en: "RMW", zh: "RMW" },
+  r_outer: { en: "R34 (34kt)", zh: "R34（34kt）" },
+  rmw_short: { en: "RMW", zh: "RMW" },
+  r34_short: { en: "R34", zh: "R34" },
+  physics_desc: {
+    en: "AI estimation constrained by Holland's gradient wind balance and pressure-wind relationship priors.",
+    zh: "AI强度评估通过Holland梯度风平衡及气压-风速关系先验进行约束。"
   },
   physics_param_r: { en: "Radial distance", zh: "径向距离" },
   physics_param_B: { en: "Shape parameter", zh: "形状参数" },
@@ -47,7 +49,7 @@ export const TRANSLATIONS: Translations = {
   physics_param_A: { en: "Scale parameter", zh: "尺度参数" },
   wind_label_short: { en: "WIND", zh: "风速" },
   pressure_label_short: { en: "PRES", zh: "气压" },
-  wind_radii: { en: "Wind Radii (km)", zh: "风圈半径 (km)" },
+  wind_radii: { en: "Wind Radii (km): RMW / R34", zh: "风圈半径 (km)：RMW / R34" },
   analysis_dashboard: { en: "Analysis Dashboard", zh: "分析控制台" },
   prev_page: { en: "Previous", zh: "上一页" },
   next_page: { en: "Next", zh: "下一页" },

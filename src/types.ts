@@ -6,20 +6,22 @@ export interface TyphoonPoint {
   lng: number;
   intensity_real: number;
   pressure: number;
-  inner_radius_real: number; // 单位：公里
-  outer_radius_real: number; // 单位：公里
-  
+  inner_radius_real: number; // RMW, 单位：公里
+  outer_radius_real: number; // R34 (34kt), 单位：公里
+
   // IDOL 模型估计
   lat_pred: number;
   lng_pred: number;
   intensity_pred: number;
   pressure_pred: number;
-  inner_radius_pred: number; // 单位：公里
-  outer_radius_pred: number; // 单位：公里
+  inner_radius_pred: number; // RMW, 单位：公里
+  outer_radius_pred: number; // R34 (34kt), 单位：公里
 }
 
 export interface TyphoonCase {
   id: string;
+  stormCode?: string;
+  sourceType?: 'csv_truth' | 'manual';
   nameEn: string;
   nameZh: string;
   data: TyphoonPoint[];

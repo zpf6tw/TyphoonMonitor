@@ -4,7 +4,7 @@ const generateTyphoonData = (caseName, hours = 24) => {
   const points = [];
   const startPos = {
     'ATSANI': { lat: 21.5, lng: 128.0, drift: 0.12 },
-    'Muifa': { lat: 19.0, lng: 130.0, drift: 0.18 },
+    'BAVI': { lat: 27.0, lng: 126.0, drift: 0.14 },
   };
 
   const { lat: baseLat, lng: baseLng, drift } = startPos[caseName] || startPos['ATSANI'];
@@ -61,7 +61,7 @@ const generateTyphoonData = (caseName, hours = 24) => {
 
 const MOCK_CASES = [
   { id: '1', nameEn: 'Typhoon ATSANI', nameZh: '台风“ATSANI”', data: generateTyphoonData('ATSANI', 48) },
-  { id: '2', nameEn: 'Typhoon Muifa', nameZh: '台风“梅花”', data: generateTyphoonData('Muifa', 36) }
+  { id: '2', nameEn: 'Typhoon BAVI', nameZh: '台风“BAVI”', data: generateTyphoonData('BAVI', 48) }
 ];
 
 fs.writeFileSync('./src/data/typhoonData.json', JSON.stringify(MOCK_CASES, null, 2));

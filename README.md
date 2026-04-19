@@ -56,4 +56,4 @@
 - 在 `members` 数组中添加、修改或删除学生的信息。
 
 ### 3. 网站其他信息修改 (Other Website Info Updates)
-如果您需要修改网站的其他文本、布局或添加新功能，建议使用 **GitHub Copilot**。您可以直接在代码中编写注释，或者在 GitHub 中创建 Issue (议题) 描述您的需求，让 Copilot 辅助您完成代码的修改。
+如果您需要修改网站的其他文本、布局或添加新功能，建议使用 **GitHub Copilot**。您可以直接在代码中编写注释，或者在 GitHub 中创建 Issue (议题) 描述您的需求，让 Copilot 辅助您完成代码的修改，Copilot会自动创建一个分支。

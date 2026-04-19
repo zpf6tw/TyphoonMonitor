@@ -32,6 +32,13 @@ interface PreloadCloudOptions {
   waitForDecode?: boolean;
 }
 
+interface MapControllerProps {
+  center: [number, number];
+  bounds: L.LatLngBoundsLiteral;
+  isPlaying: boolean;
+  isScrubbing: boolean;
+}
+
 const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Promise<void> => {
   if (!url) {
     return Promise.resolve();
@@ -80,7 +87,7 @@ const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Prom
   return promise;
 };
 
-const MapController: React.FC<{ center: [number, number], bounds: L.LatLngBoundsExpression, isPlaying: boolean, isScrubbing: boolean }> = ({ center, bounds, isPlaying, isScrubbing }) => {
+const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying, isScrubbing }) => {
   const map = useMap();
 
   // 处理边界和缩放限制
@@ -153,7 +160,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
 
   // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
-  const imageBounds: L.LatLngBoundsExpression = [
+  const imageBounds: L.LatLngBoundsLiteral = [
     [-60, 80], // [South, West]
     [60, 200]  // [North, East]
   ];
@@ -273,7 +280,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     });
 
     const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + 25);
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const prefetchFarFrames = () => {
       farAhead.forEach(url => {
@@ -298,10 +305,10 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       };
     }
 
-    timeoutId = window.setTimeout(prefetchFarFrames, 200);
+    timeoutId = setTimeout(prefetchFarFrames, 200);
     return () => {
       if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
       }
     };
   }, [availableCloudFrameUrls, currentIndex]);

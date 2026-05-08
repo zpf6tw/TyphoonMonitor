@@ -2,7 +2,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
-import { TyphoonPoint } from '../types';
+import { Language, TyphoonPoint } from '../types';
+import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../utils/atsaniFrames';
 
 // 修复默认标记图标
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,13 +17,17 @@ interface TyphoonMapProps {
   data: TyphoonPoint[];
   currentIndex: number;
   showCloudMap: boolean;
+  cloudMode?: CloudImageMode;
   cloudFrameUrls?: string[];
+  language?: Language;
   isPlaying?: boolean;
   isScrubbing?: boolean;
+  legendLeftClassName?: string;
   onCloudFrameLoaded?: (frameIndex: number) => void;
 }
 
 const loadedCloudUrls = new Set<string>();
+const decodedCloudUrls = new Set<string>();
 const loadingCloudPromises = new Map<string, Promise<void>>();
 
 interface PreloadCloudOptions {
@@ -50,7 +55,7 @@ const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Prom
   const { waitForDecode = true } = options;
   const promiseKey = `${url}|${waitForDecode ? 'decode' : 'raw'}`;
 
-  if (loadedCloudUrls.has(url)) {
+  if ((waitForDecode ? decodedCloudUrls : loadedCloudUrls).has(url)) {
     return Promise.resolve();
   }
 
@@ -74,9 +79,12 @@ const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Prom
         }
       }
 
+      if (waitForDecode) {
+        decodedCloudUrls.add(url);
+      }
+
       loadedCloudUrls.add(url);
-      loadingCloudPromises.delete(`${url}|decode`);
-      loadingCloudPromises.delete(`${url}|raw`);
+      loadingCloudPromises.delete(promiseKey);
       resolve();
     };
     image.onerror = () => {
@@ -141,22 +149,87 @@ const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying
 
 // 内风圈保持恒定颜色，防止模拟过程中颜色偏移
 const INNER_RING_COLOR = '#3b82f6';
+const CLOUD_OVERLAY_OPACITY = 1;
+
+interface CloudLegendStop {
+  color: string;
+  position: number;
+}
+
+const CLOUD_TEMPERATURE_LEGENDS: Record<CloudImageMode, CloudLegendStop[]> = {
+  pseudoColor: [
+    { color: '#6b8094', position: 0 },
+    { color: '#b8d1eb', position: 10 },
+    { color: '#f5faff', position: 24 },
+    { color: '#ffeb80', position: 40 },
+    { color: '#ff8a33', position: 56 },
+    { color: '#eb242e', position: 72 },
+    { color: '#c21fd1', position: 88 },
+    { color: '#3ddcff', position: 100 },
+  ],
+  coolWhite: [
+    { color: '#4d617a', position: 0 },
+    { color: '#8aa8c7', position: 14 },
+    { color: '#c2dbf0', position: 30 },
+    { color: '#ebf7ff', position: 50 },
+    { color: '#ffffff', position: 72 },
+    { color: '#d1f0ff', position: 88 },
+    { color: '#9ed6ff', position: 100 },
+  ],
+};
+
+const buildLegendGradient = (mode: CloudImageMode): string => {
+  const stops = CLOUD_TEMPERATURE_LEGENDS[mode]
+    .map(stop => `${stop.color} ${stop.position}%`)
+    .join(', ');
+  return `linear-gradient(90deg, ${stops})`;
+};
+
+const CloudTemperatureLegend: React.FC<{ mode: CloudImageMode; language: Language; leftClassName: string }> = ({ mode, language, leftClassName }) => (
+  <div className={`absolute top-[7.75rem] ${leftClassName} z-[1000] w-[280px] rounded-2xl border border-white bg-white/95 backdrop-blur-md p-3 shadow-xl pointer-events-none`}>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[11px] font-bold text-slate-700">
+        {CLOUD_IMAGE_MODE_LABELS[mode][language]}
+      </span>
+      <span className="text-[10px] font-semibold text-slate-400">
+        {language === 'en' ? 'BT (K)' : '亮温 (K)'}
+      </span>
+    </div>
+    <div
+      className="mt-2 h-3 w-full rounded-sm border border-slate-200"
+      style={{ background: buildLegendGradient(mode) }}
+    />
+    <div className="mt-1 flex justify-between text-[9px] font-semibold text-slate-500">
+      <span>290K</span>
+      <span>240K</span>
+      <span>190K</span>
+    </div>
+    <p className="mt-2 text-[10px] leading-snug text-slate-500">
+      {language === 'en'
+        ? 'Himawari-8 infrared Band 13, lower brightness temperature means colder cloud tops.'
+        : '使用葵花8号红外波段13通道数据，亮温越低表示云顶越冷。'}
+    </p>
+  </div>
+);
 
 export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   data,
   currentIndex,
   showCloudMap,
+  cloudMode = 'pseudoColor',
   cloudFrameUrls,
+  language = 'zh',
   isPlaying = false,
   isScrubbing = false,
+  legendLeftClassName = 'left-6',
   onCloudFrameLoaded,
 }) => {
-  const currentPoint = data[currentIndex];
   const [activeCloudImageUrl, setActiveCloudImageUrl] = useState<string | null>(null);
+  const [displayedCloudImageUrl, setDisplayedCloudImageUrl] = useState<string | null>(null);
+  const [displayedCloudFrameIndex, setDisplayedCloudFrameIndex] = useState<number | null>(null);
   const latestRequestedUrl = useRef<string | null>(null);
 
   const path = useMemo(() => data.map(p => [p.lat, p.lng] as [number, number]), [data]);
-  const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
 
   // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
   const imageBounds = FIXED_IMAGE_BOUNDS;
@@ -197,48 +270,61 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       return null;
     }
 
-    for (let offset = 0; offset < availableCloudFrameUrls.length; offset += 1) {
-      const left = targetIndex - offset;
-      if (left >= 0) {
-        const leftUrl = availableCloudFrameUrls[left];
-        if (loadedCloudUrls.has(leftUrl)) {
-          return leftUrl;
-        }
-      }
-
-      const right = targetIndex + offset;
-      if (right < availableCloudFrameUrls.length) {
-        const rightUrl = availableCloudFrameUrls[right];
-        if (loadedCloudUrls.has(rightUrl)) {
-          return rightUrl;
-        }
+    for (let index = targetIndex; index >= 0; index -= 1) {
+      const url = availableCloudFrameUrls[index];
+      if (loadedCloudUrls.has(url)) {
+        return url;
       }
     }
 
     return null;
   };
 
+  const immediatelyRenderableCloudImageUrl = targetCloudImageUrl && loadedCloudUrls.has(targetCloudImageUrl)
+    ? targetCloudImageUrl
+    : findNearestLoadedUrl(targetCloudFrameIndex);
+
+  const renderedCloudImageUrl = immediatelyRenderableCloudImageUrl || activeCloudImageUrl;
+  const renderedCloudFrameIndex = renderedCloudImageUrl
+    ? cloudUrlIndexMap.get(renderedCloudImageUrl)
+    : undefined;
+  const synchronizedIndex = showCloudMap
+    && availableCloudFrameUrls.length > 0
+    && renderedCloudImageUrl
+    && displayedCloudFrameIndex !== null
+    ? displayedCloudFrameIndex
+    : currentIndex;
+  const visualIndex = Math.min(Math.max(synchronizedIndex, 0), Math.max(0, data.length - 1));
+  const currentPoint = data[visualIndex] || data[0];
+  const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
+
   useEffect(() => {
     if (!targetCloudImageUrl) {
       setActiveCloudImageUrl(null);
+      setDisplayedCloudImageUrl(null);
+      setDisplayedCloudFrameIndex(null);
       return;
     }
 
     let isCancelled = false;
     latestRequestedUrl.current = targetCloudImageUrl;
 
-    const nearestLoadedUrl = findNearestLoadedUrl(targetCloudFrameIndex);
+    const nearestLoadedUrl = activeCloudImageUrl || findNearestLoadedUrl(targetCloudFrameIndex);
     if (nearestLoadedUrl) {
       setActiveCloudImageUrl(nearestLoadedUrl);
     }
 
-    preloadCloudImage(targetCloudImageUrl, { waitForDecode: isPlaying && !isScrubbing })
+    const shouldWaitForDecode = isPlaying && !isScrubbing;
+
+    preloadCloudImage(targetCloudImageUrl, { waitForDecode: shouldWaitForDecode })
       .then(() => {
         if (!isCancelled && latestRequestedUrl.current === targetCloudImageUrl) {
           setActiveCloudImageUrl(targetCloudImageUrl);
         }
 
-        notifyCloudFrameLoaded(targetCloudImageUrl);
+        if (shouldWaitForDecode || decodedCloudUrls.has(targetCloudImageUrl)) {
+          notifyCloudFrameLoaded(targetCloudImageUrl);
+        }
       })
       .catch(() => {
         // 保持上一帧，避免切换时出现空白闪烁
@@ -248,6 +334,12 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       isCancelled = true;
     };
   }, [targetCloudImageUrl, targetCloudFrameIndex, isPlaying, isScrubbing]);
+
+  useEffect(() => {
+    setActiveCloudImageUrl(null);
+    setDisplayedCloudImageUrl(null);
+    setDisplayedCloudFrameIndex(null);
+  }, [cloudFrameUrls, cloudMode]);
 
   useEffect(() => {
     if (!availableCloudFrameUrls.length) {
@@ -338,19 +430,38 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         />
 
         <Polyline
-          positions={path.slice(0, currentIndex + 1)}
+          positions={path.slice(0, visualIndex + 1)}
           color="#3b82f6"
           weight={3}
           opacity={1}
         />
 
         {/* 卫星云图叠加层 */}
-        {showCloudMap && activeCloudImageUrl && (
+        {showCloudMap && displayedCloudImageUrl && displayedCloudImageUrl !== renderedCloudImageUrl && (
           <ImageOverlay
-            url={activeCloudImageUrl}
+            key={`displayed-${displayedCloudImageUrl}`}
+            url={displayedCloudImageUrl}
             bounds={imageBounds}
-            opacity={1}
+            opacity={CLOUD_OVERLAY_OPACITY}
             className="satellite-cloud-overlay"
+          />
+        )}
+
+        {showCloudMap && renderedCloudImageUrl && (
+          <ImageOverlay
+            key={`staged-${renderedCloudImageUrl}`}
+            url={renderedCloudImageUrl}
+            bounds={imageBounds}
+            opacity={displayedCloudImageUrl === renderedCloudImageUrl ? CLOUD_OVERLAY_OPACITY : 0}
+            className="satellite-cloud-overlay"
+            eventHandlers={{
+              load: () => {
+                if (renderedCloudFrameIndex !== undefined) {
+                  setDisplayedCloudImageUrl(renderedCloudImageUrl);
+                  setDisplayedCloudFrameIndex(renderedCloudFrameIndex);
+                }
+              },
+            }}
           />
         )}
 
@@ -382,6 +493,10 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
 
         <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} isScrubbing={isScrubbing} />
       </MapContainer>
+
+      {showCloudMap && displayedCloudImageUrl && (
+        <CloudTemperatureLegend mode={cloudMode} language={language} leftClassName={legendLeftClassName} />
+      )}
 
       {/* 内核呼吸动画样式 */}
       <style dangerouslySetInnerHTML={{

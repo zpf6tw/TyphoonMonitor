@@ -7,7 +7,14 @@ import { LabOverview, LabTeam, LabResearch, LabPublications } from './components
 import { MOCK_CASES } from './utils/dataGenerator';
 import { Language, TyphoonPoint, ViewType } from './types';
 import { TRANSLATIONS } from './constants';
-import { CLOUD_FRAMES_BY_STORM, resolveStormCloudKey } from './utils/atsaniFrames';
+import {
+  CLOUD_FRAMES_BY_STORM,
+  CLOUD_IMAGE_MODE_LABELS,
+  CLOUD_IMAGE_MODES,
+  CloudImageMode,
+  getPrimaryCloudFrames,
+  resolveStormCloudKey
+} from './utils/atsaniFrames';
 import {
   Play,
   Pause,
@@ -80,10 +87,10 @@ const CaseSelectorDropdown: React.FC<{
   const selectedOption = options.find(o => o.id === value);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-slate-100/50 text-sm font-semibold text-slate-700 outline-none border-none py-1.5 px-3 rounded-lg hover:bg-slate-200/50 cursor-pointer transition-colors"
+        className="flex w-full items-center justify-between gap-2 bg-slate-100/50 text-sm font-semibold text-slate-700 outline-none border-none py-1.5 px-3 rounded-lg hover:bg-slate-200/50 cursor-pointer transition-colors"
       >
         {selectedOption ? (language === 'en' ? selectedOption.nameEn : selectedOption.nameZh) : ''}
         <ChevronDown size={14} className={`text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
@@ -96,7 +103,7 @@ const CaseSelectorDropdown: React.FC<{
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 w-48 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
+            className="absolute top-full mt-2 left-0 w-full max-h-72 overflow-y-auto bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl z-50"
           >
             {options.map((option) => (
               <button
@@ -105,7 +112,7 @@ const CaseSelectorDropdown: React.FC<{
                   onChange(option.id);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-100 ${value === option.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'
+                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-100 truncate ${value === option.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'
                   }`}
               >
                 {language === 'en' ? option.nameEn : option.nameZh}
@@ -127,6 +134,10 @@ const alignDataToFrameCount = (
   frameLabels: string[]
 ): TyphoonPoint[] => {
   if (!baseData.length || frameCount <= 0) {
+    return baseData;
+  }
+
+  if (baseData.length === frameCount) {
     return baseData;
   }
 
@@ -183,6 +194,7 @@ const App: React.FC = () => {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [showCloudMap, setShowCloudMap] = useState(true);
+  const [cloudMode, setCloudMode] = useState<CloudImageMode>('pseudoColor');
 
   // 面板内部状态
   const [panels, setPanels] = useState({
@@ -204,25 +216,40 @@ const App: React.FC = () => {
     [selectedCase.stormCode, selectedCase.nameEn]
   );
 
-  const activeCloudFrames = useMemo(
-    () => (activeStormCloudKey ? CLOUD_FRAMES_BY_STORM[activeStormCloudKey] : []),
+  const activeCloudFrameGroups = useMemo(
+    () => (activeStormCloudKey ? CLOUD_FRAMES_BY_STORM[activeStormCloudKey] : null),
     [activeStormCloudKey]
   );
 
+  const activeCloudFrames = useMemo(
+    () => activeCloudFrameGroups?.[cloudMode] || [],
+    [activeCloudFrameGroups, cloudMode]
+  );
+
+  const timelineCloudFrames = useMemo(
+    () => {
+      if (activeCloudFrames.length > 0) {
+        return activeCloudFrames;
+      }
+      return activeCloudFrameGroups ? getPrimaryCloudFrames(activeCloudFrameGroups) : [];
+    },
+    [activeCloudFrameGroups, activeCloudFrames]
+  );
+
   const timelineLabels = useMemo(() => {
-    if (activeCloudFrames.length > 0) {
-      return activeCloudFrames.map(frame => frame.shortLabel);
+    if (timelineCloudFrames.length > 0) {
+      return timelineCloudFrames.map(frame => frame.shortLabel);
     }
     return selectedCase.data.map(point => point.time);
-  }, [activeCloudFrames, selectedCase.data]);
+  }, [timelineCloudFrames, selectedCase.data]);
 
   const timelineData = useMemo(() => {
-    if (!activeCloudFrames.length) {
+    if (!timelineCloudFrames.length) {
       return selectedCase.data;
     }
 
-    return alignDataToFrameCount(selectedCase.data, activeCloudFrames.length, timelineLabels);
-  }, [activeCloudFrames, selectedCase.data, timelineLabels]);
+    return alignDataToFrameCount(selectedCase.data, timelineCloudFrames.length, timelineLabels);
+  }, [timelineCloudFrames, selectedCase.data, timelineLabels]);
 
   const cloudFrameUrls = useMemo(
     () => activeCloudFrames.map(frame => frame.url),
@@ -240,10 +267,11 @@ const App: React.FC = () => {
   }, [timelineData.length]);
 
   const currentPoint = timelineData[currentIndex] || timelineData[0];
-  const currentUtcLabel = activeCloudFrames[currentIndex]?.fullLabel || timelineLabels[currentIndex] || '--:--';
+  const currentUtcLabel = timelineCloudFrames[currentIndex]?.fullLabel || timelineLabels[currentIndex] || '--:--';
   const nextFrameIndex = Math.min(currentIndex + 1, Math.max(0, timelineData.length - 1));
+  const shouldBufferCloudFrames = showCloudMap && cloudFrameUrls.length > 0;
   const isBuffering = isPlaying
-    && cloudFrameUrls.length > 0
+    && shouldBufferCloudFrames
     && currentIndex < timelineData.length - 1
     && !readyFrameIndicesRef.current.has(nextFrameIndex);
   const bufferProgress = cloudFrameUrls.length > 0
@@ -312,7 +340,7 @@ const App: React.FC = () => {
   useEffect(() => {
     readyFrameIndicesRef.current = new Set<number>();
     setLoadedFrameCount(0);
-  }, [selectedCaseId, cloudFrameUrls.length]);
+  }, [selectedCaseId, cloudFrameUrls.length, cloudMode]);
 
   useEffect(() => {
     if (!isScrubbing) {
@@ -342,7 +370,7 @@ const App: React.FC = () => {
             return prev;
           }
 
-          if (!cloudFrameUrls.length) {
+          if (!shouldBufferCloudFrames) {
             return prev + 1;
           }
 
@@ -357,7 +385,7 @@ const App: React.FC = () => {
       }, PLAYBACK_INTERVAL_MS);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, timelineData.length, currentView, cloudFrameUrls.length]);
+  }, [isPlaying, timelineData.length, currentView, shouldBufferCloudFrames]);
 
   const handleTimelineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextIndex = Number.parseInt(e.target.value, 10);
@@ -393,9 +421,12 @@ const App: React.FC = () => {
                 data={timelineData}
                 currentIndex={currentIndex}
                 showCloudMap={showCloudMap}
+                cloudMode={cloudMode}
                 cloudFrameUrls={cloudFrameUrls}
+                language={language}
                 isPlaying={isPlaying}
                 isScrubbing={isScrubbing}
+                legendLeftClassName={!isLeftPanelOpen ? 'left-[4.5rem]' : 'left-6'}
                 onCloudFrameLoaded={handleCloudFrameLoaded}
               />
             </div>
@@ -419,7 +450,7 @@ const App: React.FC = () => {
                 }`}
             >
               {/* 场次选择器 */}
-              <div className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-xl border border-white flex items-center gap-4 pointer-events-auto shrink-0 h-fit">
+              <div className="bg-white/95 backdrop-blur-md w-[280px] p-3 rounded-2xl shadow-xl border border-white flex flex-col items-stretch gap-2 pointer-events-auto shrink-0 h-fit">
                 <div className="flex items-center gap-2">
                   <Target size={14} className="text-blue-500" />
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('active_case')}</span>
@@ -533,8 +564,8 @@ const App: React.FC = () => {
                       <button
                         onClick={() => setIsPlaying(!isPlaying)}
                         className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${isPlaying ? 'bg-slate-100 text-slate-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                          }`}
-                      >
+                            }`}
+                        >
                         {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} className="ml-1" fill="currentColor" />}
                       </button>
                       <button
@@ -544,14 +575,31 @@ const App: React.FC = () => {
                       >
                         <RotateCcw size={18} />
                       </button>
-                      <button
-                        onClick={() => setShowCloudMap(!showCloudMap)}
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${showCloudMap ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-400'
-                          }`}
+                      <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-full p-1 shrink-0">
+                        <button
+                          onClick={() => setShowCloudMap(!showCloudMap)}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${showCloudMap ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-400'
+                            }`}
                         title={language === 'en' ? 'Toggle Cloud Map' : '切换红外云图'}
                       >
-                        <Cloud size={18} />
-                      </button>
+                          <Cloud size={16} />
+                        </button>
+                        {CLOUD_IMAGE_MODES.map((mode) => (
+                          <button
+                            key={mode}
+                            onClick={() => {
+                              setCloudMode(mode);
+                              setShowCloudMap(true);
+                            }}
+                            className={`h-8 min-w-[52px] px-2 rounded-full text-[11px] font-bold transition-colors ${showCloudMap && cloudMode === mode
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'text-slate-500 hover:bg-white hover:text-blue-600'
+                              }`}
+                          >
+                            {CLOUD_IMAGE_MODE_LABELS[mode][language]}
+                          </button>
+                        ))}
+                    </div>
                     </div>
                     <div className="whitespace-nowrap">
                       <h4 className="text-sm font-bold text-slate-800">{t('timeline')}</h4>

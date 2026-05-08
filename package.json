@@ -7,10 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "sync:typhoon-data": "node tools/sync-typhoon-data.mjs",
-    "convert:cloud": "node tools/convert-cloud-frames.mjs --cleanup",
-    "convert:cloud:overwrite": "node tools/convert-cloud-frames.mjs --overwrite --cleanup",
-    "convert:cloud:keep-source": "node tools/convert-cloud-frames.mjs --keep-source"
+    "sync:typhoon-data": "node generate_json.cjs",
+    "convert:cloud": "python ../image_processor/process_atsani_h5_to_webp.py",
+    "convert:cloud:overwrite": "python ../image_processor/process_atsani_h5_to_webp.py --overwrite",
+    "convert:cloud:keep-unselected": "python ../image_processor/process_atsani_h5_to_webp.py --keep-unselected-outputs"
   },
   "dependencies": {
     "framer-motion": "^12.23.26",

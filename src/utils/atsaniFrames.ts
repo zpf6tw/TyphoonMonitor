@@ -6,14 +6,30 @@ export interface CloudFrameMeta {
     url: string;
 }
 
-export type StormCloudKey = 'ATSANI';
+export type StormCloudKey = string;
+export type CloudImageMode = 'pseudoColor' | 'coolWhite';
 
-const STORM_FRAME_MODULES: Record<StormCloudKey, Record<string, string>> = {
-    ATSANI: import.meta.glob('../../image/ATSANI/*.webp', {
-        eager: true,
-        import: 'default',
-    }) as Record<string, string>,
+export const CLOUD_IMAGE_MODES: CloudImageMode[] = ['pseudoColor', 'coolWhite'];
+
+export const CLOUD_IMAGE_MODE_LABELS: Record<CloudImageMode, { en: string; zh: string }> = {
+    pseudoColor: { en: 'Pseudo', zh: '\u4f2a\u5f69\u8272' },
+    coolWhite: { en: 'White', zh: '\u51b7\u767d\u8272' },
 };
+
+const STYLE_DIR_BY_MODE: Record<CloudImageMode, string> = {
+    pseudoColor: 'pseudo_color',
+    coolWhite: 'cool_white',
+};
+
+const PSEUDO_COLOR_MODULES = import.meta.glob('../../image/*/pseudo_color/*.webp', {
+    eager: true,
+    import: 'default',
+}) as Record<string, string>;
+
+const COOL_WHITE_MODULES = import.meta.glob('../../image/*/cool_white/*.webp', {
+    eager: true,
+    import: 'default',
+}) as Record<string, string>;
 
 const FRAME_FILE_PATTERN = /NC_H08_(\d{8})_(\d{4})_.*\.webp$/i;
 
@@ -42,7 +58,7 @@ const parseFrame = (filePath: string, url: string): CloudFrameMeta | null => {
     }
 
     const [, dateCode, timeCode] = match;
-    const timestamp = `${dateCode}${timeCode}`;
+    const timestamp = `${dateCode}${timeCode.slice(0, 2)}`;
 
     return {
         id: timestamp,
@@ -53,6 +69,32 @@ const parseFrame = (filePath: string, url: string): CloudFrameMeta | null => {
     };
 };
 
+const extractStormKey = (filePath: string, mode: CloudImageMode): string | null => {
+    const styleDir = STYLE_DIR_BY_MODE[mode];
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    const match = normalizedPath.match(new RegExp(`/image/([^/]+)/${styleDir}/`));
+    return match ? match[1].toUpperCase() : null;
+};
+
+const groupModulesByStorm = (
+    mode: CloudImageMode,
+    modules: Record<string, string>
+): Record<StormCloudKey, Record<string, string>> => {
+    const grouped: Record<StormCloudKey, Record<string, string>> = {};
+
+    for (const [filePath, url] of Object.entries(modules)) {
+        const stormKey = extractStormKey(filePath, mode);
+        if (!stormKey) {
+            continue;
+        }
+
+        grouped[stormKey] ||= {};
+        grouped[stormKey][filePath] = url;
+    }
+
+    return grouped;
+};
+
 const buildCloudFrames = (modules: Record<string, string>): CloudFrameMeta[] => {
     return Object.entries(modules)
         .map(([filePath, url]) => parseFrame(filePath, url))
@@ -60,23 +102,62 @@ const buildCloudFrames = (modules: Record<string, string>): CloudFrameMeta[] => 
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 };
 
-export const CLOUD_FRAMES_BY_STORM: Record<StormCloudKey, CloudFrameMeta[]> = {
-    ATSANI: buildCloudFrames(STORM_FRAME_MODULES.ATSANI),
+const buildCloudFramesByStorm = (): Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>> => {
+    const modulesByMode: Record<CloudImageMode, Record<StormCloudKey, Record<string, string>>> = {
+        pseudoColor: groupModulesByStorm('pseudoColor', PSEUDO_COLOR_MODULES),
+        coolWhite: groupModulesByStorm('coolWhite', COOL_WHITE_MODULES),
+    };
+
+    const stormKeys = Array.from(
+        new Set([
+            ...Object.keys(modulesByMode.pseudoColor),
+            ...Object.keys(modulesByMode.coolWhite),
+        ])
+    ).sort((left, right) => left.localeCompare(right));
+
+    return stormKeys.reduce<Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>>>(
+        (result, stormKey) => {
+            result[stormKey] = {
+                pseudoColor: buildCloudFrames(modulesByMode.pseudoColor[stormKey] || {}),
+                coolWhite: buildCloudFrames(modulesByMode.coolWhite[stormKey] || {}),
+            };
+            return result;
+        },
+        {}
+    );
 };
 
-// 兼容历史引用
-export const ATSANI_CLOUD_FRAMES: CloudFrameMeta[] = CLOUD_FRAMES_BY_STORM.ATSANI;
+export const CLOUD_FRAMES_BY_STORM: Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>> =
+    buildCloudFramesByStorm();
+
+export const getPrimaryCloudFrames = (
+    frameGroups: Record<CloudImageMode, CloudFrameMeta[]>
+): CloudFrameMeta[] => {
+    if (frameGroups.pseudoColor.length > 0) {
+        return frameGroups.pseudoColor;
+    }
+    return frameGroups.coolWhite;
+};
+
+const EMPTY_FRAME_GROUPS: Record<CloudImageMode, CloudFrameMeta[]> = {
+    pseudoColor: [],
+    coolWhite: [],
+};
+
+export const ATSANI_CLOUD_FRAMES: CloudFrameMeta[] = getPrimaryCloudFrames(
+    CLOUD_FRAMES_BY_STORM.ATSANI || EMPTY_FRAME_GROUPS
+);
 
 export const resolveStormCloudKey = (stormCode?: string, nameEn?: string): StormCloudKey | null => {
     const code = String(stormCode || '').toUpperCase();
-    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM) as StormCloudKey[]) {
+    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM)) {
         if (code.startsWith(`${key}_`) || code === key) {
             return key;
         }
     }
 
     const normalizedName = String(nameEn || '').toUpperCase();
-    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM) as StormCloudKey[]) {
+    for (const key of Object.keys(CLOUD_FRAMES_BY_STORM)) {
         if (normalizedName.includes(key)) {
             return key;
         }

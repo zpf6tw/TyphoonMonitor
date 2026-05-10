@@ -21,12 +21,12 @@ const STYLE_DIR_BY_MODE: Record<CloudImageMode, string> = {
     coolWhite: 'cool_white',
 };
 
-const PSEUDO_COLOR_MODULES = import.meta.glob('../../image/*/pseudo_color/*.webp', {
+const PSEUDO_COLOR_MODULES = import.meta.glob('../../image/zpf/*/pseudo_color/*.webp', {
     eager: true,
     import: 'default',
 }) as Record<string, string>;
 
-const COOL_WHITE_MODULES = import.meta.glob('../../image/*/cool_white/*.webp', {
+const COOL_WHITE_MODULES = import.meta.glob('../../image/zpf/*/cool_white/*.webp', {
     eager: true,
     import: 'default',
 }) as Record<string, string>;
@@ -72,7 +72,7 @@ const parseFrame = (filePath: string, url: string): CloudFrameMeta | null => {
 const extractStormKey = (filePath: string, mode: CloudImageMode): string | null => {
     const styleDir = STYLE_DIR_BY_MODE[mode];
     const normalizedPath = filePath.replace(/\\/g, '/');
-    const match = normalizedPath.match(new RegExp(`/image/([^/]+)/${styleDir}/`));
+    const match = normalizedPath.match(new RegExp(`/image/zpf/([^/]+)/${styleDir}/`));
     return match ? match[1].toUpperCase() : null;
 };
 
@@ -144,8 +144,8 @@ const EMPTY_FRAME_GROUPS: Record<CloudImageMode, CloudFrameMeta[]> = {
     coolWhite: [],
 };
 
-export const ATSANI_CLOUD_FRAMES: CloudFrameMeta[] = getPrimaryCloudFrames(
-    CLOUD_FRAMES_BY_STORM.ATSANI || EMPTY_FRAME_GROUPS
+export const DEFAULT_CLOUD_FRAMES: CloudFrameMeta[] = getPrimaryCloudFrames(
+    CLOUD_FRAMES_BY_STORM[Object.keys(CLOUD_FRAMES_BY_STORM)[0]] || EMPTY_FRAME_GROUPS
 );
 
 export const resolveStormCloudKey = (stormCode?: string, nameEn?: string): StormCloudKey | null => {

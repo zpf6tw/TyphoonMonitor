@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { Language, TyphoonPoint } from '../types';
-import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../utils/atsaniFrames';
+import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../utils/cloudFrames';
 
 // 修复默认标记图标
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,7 +18,7 @@ interface TyphoonMapProps {
   currentIndex: number;
   showCloudMap: boolean;
   cloudMode?: CloudImageMode;
-  cloudFrameUrls?: string[];
+  cloudFrameUrls?: Array<string | null>;
   language?: Language;
   isPlaying?: boolean;
   isScrubbing?: boolean;
@@ -234,14 +234,15 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
   const imageBounds = FIXED_IMAGE_BOUNDS;
 
-  const availableCloudFrameUrls = cloudFrameUrls && cloudFrameUrls.length > 0
-    ? cloudFrameUrls
-    : [];
+  const availableCloudFrameUrls = useMemo(() => cloudFrameUrls ?? [], [cloudFrameUrls]);
+  const hasCloudFrames = availableCloudFrameUrls.some(Boolean);
 
   const cloudUrlIndexMap = useMemo(() => {
     const map = new Map<string, number>();
     availableCloudFrameUrls.forEach((url, index) => {
-      map.set(url, index);
+      if (url) {
+        map.set(url, index);
+      }
     });
     return map;
   }, [availableCloudFrameUrls]);
@@ -257,22 +258,22 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     }
   };
 
-  const targetCloudImageUrl = availableCloudFrameUrls.length > 0
-    ? availableCloudFrameUrls[Math.min(currentIndex, availableCloudFrameUrls.length - 1)]
+  const targetCloudImageUrl = hasCloudFrames
+    ? availableCloudFrameUrls[currentIndex] || null
     : null;
 
-  const targetCloudFrameIndex = availableCloudFrameUrls.length > 0
-    ? Math.min(currentIndex, availableCloudFrameUrls.length - 1)
+  const targetCloudFrameIndex = targetCloudImageUrl
+    ? currentIndex
     : -1;
 
   const findNearestLoadedUrl = (targetIndex: number): string | null => {
-    if (!availableCloudFrameUrls.length || targetIndex < 0) {
+    if (!hasCloudFrames || targetIndex < 0) {
       return null;
     }
 
     for (let index = targetIndex; index >= 0; index -= 1) {
       const url = availableCloudFrameUrls[index];
-      if (loadedCloudUrls.has(url)) {
+      if (url && loadedCloudUrls.has(url)) {
         return url;
       }
     }
@@ -289,7 +290,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     ? cloudUrlIndexMap.get(renderedCloudImageUrl)
     : undefined;
   const synchronizedIndex = showCloudMap
-    && availableCloudFrameUrls.length > 0
+    && targetCloudImageUrl
     && renderedCloudImageUrl
     && displayedCloudFrameIndex !== null
     ? displayedCloudFrameIndex
@@ -342,7 +343,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   }, [cloudFrameUrls, cloudMode]);
 
   useEffect(() => {
-    if (!availableCloudFrameUrls.length) {
+    if (!hasCloudFrames) {
       return;
     }
 
@@ -351,11 +352,14 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       const next = currentIndex + offset;
       const prev = currentIndex - offset;
 
-      if (next < availableCloudFrameUrls.length) {
-        around.push(availableCloudFrameUrls[next]);
+      const nextUrl = next < availableCloudFrameUrls.length ? availableCloudFrameUrls[next] : null;
+      const prevUrl = prev >= 0 ? availableCloudFrameUrls[prev] : null;
+
+      if (nextUrl) {
+        around.push(nextUrl);
       }
-      if (prev >= 0) {
-        around.push(availableCloudFrameUrls[prev]);
+      if (prevUrl) {
+        around.push(prevUrl);
       }
     }
 
@@ -368,7 +372,9 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     });
 
     const farAheadWindow = isPlaying ? 8 : 25;
-    const farAhead = availableCloudFrameUrls.slice(currentIndex + 3, currentIndex + farAheadWindow);
+    const farAhead = availableCloudFrameUrls
+      .slice(currentIndex + 3, currentIndex + farAheadWindow)
+      .filter((url): url is string => Boolean(url));
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const prefetchFarFrames = () => {
@@ -400,7 +406,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [availableCloudFrameUrls, currentIndex, isPlaying]);
+  }, [availableCloudFrameUrls, currentIndex, isPlaying, hasCloudFrames]);
 
   return (
     <div className="w-full h-full relative">

@@ -5,7 +5,7 @@ import { TyphoonMap } from './components/TyphoonMap';
 import { MetricsChart } from './components/MetricsChart';
 import { LabOverview, LabTeam, LabResearch, LabPublications } from './components/LabPages';
 import { MOCK_CASES } from './utils/dataGenerator';
-import { Language, TyphoonPoint, ViewType } from './types';
+import { Language, ViewType } from './types';
 import { TRANSLATIONS } from './constants';
 import {
   CLOUD_FRAMES_BY_STORM,
@@ -14,7 +14,7 @@ import {
   CloudImageMode,
   getPrimaryCloudFrames,
   resolveStormCloudKey
-} from './utils/atsaniFrames';
+} from './utils/cloudFrames';
 import {
   Play,
   Pause,
@@ -125,57 +125,27 @@ const CaseSelectorDropdown: React.FC<{
   );
 };
 
-const lerp = (start: number, end: number, ratio: number): number => start + (end - start) * ratio;
 const PLAYBACK_INTERVAL_MS = 1200;
+const POINT_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/;
 
-const alignDataToFrameCount = (
-  baseData: TyphoonPoint[],
-  frameCount: number,
-  frameLabels: string[]
-): TyphoonPoint[] => {
-  if (!baseData.length || frameCount <= 0) {
-    return baseData;
+const toPointTimestamp = (time: string): string => {
+  const match = String(time).match(POINT_TIME_PATTERN);
+  if (!match) {
+    return String(time).replace(/\D/g, '').slice(0, 10);
   }
 
-  if (baseData.length === frameCount) {
-    return baseData;
+  const [, year, month, day, hour] = match;
+  return `${year}${month}${day}${hour}`;
+};
+
+const toTimelineShortLabel = (time: string): string => {
+  const match = String(time).match(POINT_TIME_PATTERN);
+  if (!match) {
+    return time;
   }
 
-  if (baseData.length === 1) {
-    return Array.from({ length: frameCount }, (_, index) => ({
-      ...baseData[0],
-      time: frameLabels[index] || baseData[0].time,
-    }));
-  }
-
-  const sourceMaxIndex = baseData.length - 1;
-
-  return Array.from({ length: frameCount }, (_, frameIndex) => {
-    const normalized = frameCount === 1 ? 0 : frameIndex / (frameCount - 1);
-    const sourcePosition = normalized * sourceMaxIndex;
-    const lowerIndex = Math.floor(sourcePosition);
-    const upperIndex = Math.min(sourceMaxIndex, lowerIndex + 1);
-    const ratio = sourcePosition - lowerIndex;
-
-    const start = baseData[lowerIndex];
-    const end = baseData[upperIndex];
-
-    return {
-      time: frameLabels[frameIndex] || start.time,
-      lat: lerp(start.lat, end.lat, ratio),
-      lng: lerp(start.lng, end.lng, ratio),
-      intensity_real: Math.round(lerp(start.intensity_real, end.intensity_real, ratio)),
-      intensity_pred: Math.round(lerp(start.intensity_pred, end.intensity_pred, ratio)),
-      pressure: Number(lerp(start.pressure, end.pressure, ratio).toFixed(1)),
-      pressure_pred: Number(lerp(start.pressure_pred, end.pressure_pred, ratio).toFixed(1)),
-      lat_pred: Number(lerp(start.lat_pred, end.lat_pred, ratio).toFixed(4)),
-      lng_pred: Number(lerp(start.lng_pred, end.lng_pred, ratio).toFixed(4)),
-      inner_radius_real: Math.round(lerp(start.inner_radius_real, end.inner_radius_real, ratio)),
-      outer_radius_real: Math.round(lerp(start.outer_radius_real, end.outer_radius_real, ratio)),
-      inner_radius_pred: Math.round(lerp(start.inner_radius_pred, end.inner_radius_pred, ratio)),
-      outer_radius_pred: Math.round(lerp(start.outer_radius_pred, end.outer_radius_pred, ratio)),
-    };
-  });
+  const [, , month, day, hour, minute] = match;
+  return `${month}-${day} ${hour}:${minute}`;
 };
 
 const App: React.FC = () => {
@@ -236,46 +206,48 @@ const App: React.FC = () => {
     [activeCloudFrameGroups, activeCloudFrames]
   );
 
-  const timelineLabels = useMemo(() => {
-    if (timelineCloudFrames.length > 0) {
-      return timelineCloudFrames.map(frame => frame.shortLabel);
-    }
-    return selectedCase.data.map(point => point.time);
-  }, [timelineCloudFrames, selectedCase.data]);
+  const timelineData = useMemo(() => selectedCase.data, [selectedCase.data]);
 
-  const timelineData = useMemo(() => {
-    if (!timelineCloudFrames.length) {
-      return selectedCase.data;
-    }
+  const timelineLabels = useMemo(
+    () => timelineData.map(point => toTimelineShortLabel(point.time)),
+    [timelineData]
+  );
 
-    return alignDataToFrameCount(selectedCase.data, timelineCloudFrames.length, timelineLabels);
-  }, [timelineCloudFrames, selectedCase.data, timelineLabels]);
+  const cloudFrameUrls = useMemo(() => {
+    const framesByTimestamp = new Map(
+      timelineCloudFrames.map(frame => [frame.timestamp, frame.url])
+    );
 
-  const cloudFrameUrls = useMemo(
-    () => activeCloudFrames.map(frame => frame.url),
-    [activeCloudFrames]
+    return timelineData.map(point => framesByTimestamp.get(toPointTimestamp(point.time)) || null);
+  }, [timelineCloudFrames, timelineData]);
+
+  const validCloudFrameCount = useMemo(
+    () => cloudFrameUrls.filter(Boolean).length,
+    [cloudFrameUrls]
   );
 
   const handleCloudFrameLoaded = useCallback((frameIndex: number) => {
     const readyFrames = readyFrameIndicesRef.current;
-    if (frameIndex < 0 || frameIndex >= timelineData.length || readyFrames.has(frameIndex)) {
+    if (frameIndex < 0 || frameIndex >= timelineData.length || !cloudFrameUrls[frameIndex] || readyFrames.has(frameIndex)) {
       return;
     }
 
     readyFrames.add(frameIndex);
     setLoadedFrameCount(readyFrames.size);
-  }, [timelineData.length]);
+  }, [cloudFrameUrls, timelineData.length]);
 
   const currentPoint = timelineData[currentIndex] || timelineData[0];
-  const currentUtcLabel = timelineCloudFrames[currentIndex]?.fullLabel || timelineLabels[currentIndex] || '--:--';
+  const currentUtcLabel = currentPoint?.time || timelineLabels[currentIndex] || '--:--';
   const nextFrameIndex = Math.min(currentIndex + 1, Math.max(0, timelineData.length - 1));
-  const shouldBufferCloudFrames = showCloudMap && cloudFrameUrls.length > 0;
+  const nextFrameHasCloudImage = Boolean(cloudFrameUrls[nextFrameIndex]);
+  const shouldBufferCloudFrames = showCloudMap && validCloudFrameCount > 0;
   const isBuffering = isPlaying
     && shouldBufferCloudFrames
+    && nextFrameHasCloudImage
     && currentIndex < timelineData.length - 1
     && !readyFrameIndicesRef.current.has(nextFrameIndex);
-  const bufferProgress = cloudFrameUrls.length > 0
-    ? Math.min(100, Math.round((loadedFrameCount / cloudFrameUrls.length) * 100))
+  const bufferProgress = validCloudFrameCount > 0
+    ? Math.min(100, Math.round((loadedFrameCount / validCloudFrameCount) * 100))
     : 100;
 
   const timelineLabelStep = useMemo(() => {
@@ -340,7 +312,7 @@ const App: React.FC = () => {
   useEffect(() => {
     readyFrameIndicesRef.current = new Set<number>();
     setLoadedFrameCount(0);
-  }, [selectedCaseId, cloudFrameUrls.length, cloudMode]);
+  }, [selectedCaseId, cloudFrameUrls, cloudMode]);
 
   useEffect(() => {
     if (!isScrubbing) {
@@ -375,6 +347,10 @@ const App: React.FC = () => {
           }
 
           const next = prev + 1;
+          if (!cloudFrameUrls[next]) {
+            return next;
+          }
+
           const readyFrames = readyFrameIndicesRef.current;
           if (readyFrames.has(next)) {
             return next;
@@ -385,7 +361,7 @@ const App: React.FC = () => {
       }, PLAYBACK_INTERVAL_MS);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, timelineData.length, currentView, shouldBufferCloudFrames]);
+  }, [isPlaying, timelineData.length, currentView, shouldBufferCloudFrames, cloudFrameUrls]);
 
   const handleTimelineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const nextIndex = Number.parseInt(e.target.value, 10);

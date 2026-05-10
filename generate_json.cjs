@@ -3,19 +3,12 @@ const path = require('path');
 
 const PROJECT_ROOT = __dirname;
 const WORKSPACE_ROOT = path.resolve(PROJECT_ROOT, '..');
-const CSV_PATH = path.resolve(WORKSPACE_ROOT, 'data', 'SelectedTyphoons_TimeSorted_ibtracs.csv');
-const H5_ROOT = path.resolve(WORKSPACE_ROOT, 'data', 'downloads', 'satellite_cloud_picture_h5');
+const IBTRACS_CSV_PATH = path.resolve(WORKSPACE_ROOT, 'data', 'SelectedTyphoons_ibtracs.csv');
+const IDOL_CSV_PATH = path.resolve(WORKSPACE_ROOT, 'data', 'SelectedTyphoons_IDOL_Estimated.csv');
 const TARGET_JSON_PATH = path.resolve(PROJECT_ROOT, 'src', 'data', 'typhoonData.json');
 
 const NM_TO_KM = 1.852;
 const KT_TO_MS = 0.514444;
-
-const LAT_DELTAS = [0.08, 0.05, 0.02, -0.02, -0.05, -0.08];
-const LNG_DELTAS = [-0.1, -0.06, -0.02, 0.02, 0.06, 0.1];
-const INTENSITY_DELTAS = [1, 2, 1, 0, -1, 0];
-const PRESSURE_DELTAS = [-1.5, -0.8, 0, 0.8, 1.5, 0.5];
-const RMW_SCALES = [0.95, 1.02, 1.05, 1.0, 0.98, 0.92];
-const R34_SCALES = [0.97, 1.01, 1.03, 1.0, 0.99, 0.96];
 
 const STORM_ZH_NAMES = {
   ATSANI: '\u827e\u838e\u5c3c',
@@ -27,8 +20,6 @@ const STORM_ZH_NAMES = {
   TRAMI: '\u6f6d\u7f8e',
   WIPHA: '\u97e6\u5e15',
 };
-
-const H5_TIMESTAMP_PATTERN = /NC_H08_(\d{8})_(\d{2})\d{2}_/i;
 
 const toNumber = (value, fallback = 0) => {
   const converted = Number(value);
@@ -86,92 +77,43 @@ const formatIsoTime = (isoTime) => {
   return `${year}-${month}-${day} ${hour}:00`;
 };
 
-const readAvailableH5Times = () => {
-  if (!fs.existsSync(H5_ROOT)) {
-    return null;
-  }
-
-  const result = new Map();
-  for (const entry of fs.readdirSync(H5_ROOT, { withFileTypes: true })) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-
-    const storm = entry.name.toUpperCase();
-    const stormDir = path.join(H5_ROOT, entry.name);
-    const timestamps = new Set();
-
-    for (const fileName of fs.readdirSync(stormDir)) {
-      const match = fileName.match(H5_TIMESTAMP_PATTERN);
-      if (match) {
-        timestamps.add(`${match[1]}${match[2]}`);
-      }
-    }
-
-    result.set(storm, timestamps);
-  }
-
-  return result;
-};
-
-const buildPredictions = ({ lat, lng, intensityReal, pressure, rmw, r34, index }) => {
-  const phase = index % LAT_DELTAS.length;
-
-  return {
-    lat_pred: Number((lat + LAT_DELTAS[phase]).toFixed(4)),
-    lng_pred: Number((lng + LNG_DELTAS[phase]).toFixed(4)),
-    intensity_pred: clampNonNegative(Math.round(intensityReal + INTENSITY_DELTAS[phase])),
-    pressure_pred: Number((pressure + PRESSURE_DELTAS[phase]).toFixed(1)),
-    inner_radius_pred: rmw === 0 ? 0 : clampNonNegative(Math.round(rmw * RMW_SCALES[phase])),
-    outer_radius_pred: r34 === 0 ? 0 : clampNonNegative(Math.round(r34 * R34_SCALES[phase])),
-  };
-};
-
-const mapCsvRowToPoint = (row, index) => {
-  const lat = toNumber(row.LAT);
-  const lng = toNumber(row.LON);
-  const intensityReal = clampNonNegative(Math.round(toNumber(row.WMO_WIND) * KT_TO_MS));
-  const pressure = Number(toNumber(row.WMO_PRES).toFixed(1));
-  const rmw = clampNonNegative(Math.round(toNumber(row.USA_RMW) * NM_TO_KM));
-  const r34 = clampNonNegative(Math.round(toNumber(row.USA_R34) * NM_TO_KM));
-
-  return {
-    time: formatIsoTime(row.ISO_TIME),
-    lat,
-    lng,
-    intensity_real: intensityReal,
-    pressure,
-    inner_radius_real: rmw,
-    outer_radius_real: r34,
-    ...buildPredictions({ lat, lng, intensityReal, pressure, rmw, r34, index }),
-  };
-};
+const mapCsvRowsToPoint = (truthRow, idolRow) => ({
+  time: formatIsoTime(idolRow.ISO_TIME),
+  lat: toNumber(truthRow.LAT),
+  lng: toNumber(truthRow.LON),
+  intensity_real: clampNonNegative(Math.round(toNumber(truthRow.WMO_WIND) * KT_TO_MS)),
+  pressure: Number(toNumber(truthRow.WMO_PRES).toFixed(1)),
+  inner_radius_real: clampNonNegative(Math.round(toNumber(truthRow.USA_RMW) * NM_TO_KM)),
+  outer_radius_real: clampNonNegative(Math.round(toNumber(truthRow.USA_R34) * NM_TO_KM)),
+  lat_pred: toNumber(idolRow.LAT),
+  lng_pred: toNumber(idolRow.LON),
+  intensity_pred: clampNonNegative(Math.round(toNumber(idolRow.WMO_WIND) * KT_TO_MS)),
+  pressure_pred: Number(toNumber(idolRow.WMO_PRES).toFixed(1)),
+  inner_radius_pred: clampNonNegative(Math.round(toNumber(idolRow.USA_RMW) * NM_TO_KM)),
+  outer_radius_pred: clampNonNegative(Math.round(toNumber(idolRow.USA_R34) * NM_TO_KM)),
+});
 
 const buildCases = () => {
-  const rows = parseCsv(fs.readFileSync(CSV_PATH, 'utf8'));
-  const availableH5Times = readAvailableH5Times();
+  const truthRows = parseCsv(fs.readFileSync(IBTRACS_CSV_PATH, 'utf8'));
+  const idolRows = parseCsv(fs.readFileSync(IDOL_CSV_PATH, 'utf8'));
+  const truthBySampleKey = new Map(truthRows.map((row) => [row.SAMPLE_KEY, row]));
   const grouped = new Map();
   const firstSeenStorms = [];
   const skipped = new Map();
 
-  for (const row of rows) {
-    const parsed = parseSampleKey(row.SAMPLE_KEY);
+  for (const idolRow of idolRows) {
+    const parsed = parseSampleKey(idolRow.SAMPLE_KEY);
     if (!parsed) {
       continue;
     }
 
-    const isoTime = String(row.ISO_TIME || '').trim();
+    const isoTime = String(idolRow.ISO_TIME || '').trim();
     if (!/^\d{10}$/.test(isoTime)) {
       continue;
     }
 
-    if (toNumber(row.USA_R34) === 0) {
-      skipped.set(parsed.storm, (skipped.get(parsed.storm) || 0) + 1);
-      continue;
-    }
-
-    const h5Times = availableH5Times?.get(parsed.storm);
-    if (h5Times && !h5Times.has(isoTime)) {
+    const truthRow = truthBySampleKey.get(idolRow.SAMPLE_KEY);
+    if (!truthRow) {
       skipped.set(parsed.storm, (skipped.get(parsed.storm) || 0) + 1);
       continue;
     }
@@ -187,7 +129,7 @@ const buildCases = () => {
     }
 
     const group = grouped.get(parsed.storm);
-    group.rows.push(row);
+    group.rows.push({ truthRow, idolRow });
     if (Number(isoTime) < Number(group.firstIsoTime)) {
       group.firstIsoTime = isoTime;
     }
@@ -203,7 +145,7 @@ const buildCases = () => {
   });
 
   const cases = orderedGroups.map((group, index) => {
-    const sortedRows = group.rows.sort((left, right) => Number(left.ISO_TIME) - Number(right.ISO_TIME));
+    const sortedRows = group.rows.sort((left, right) => Number(left.idolRow.ISO_TIME) - Number(right.idolRow.ISO_TIME));
     const zhName = STORM_ZH_NAMES[group.storm] || group.storm;
 
     return {
@@ -212,7 +154,7 @@ const buildCases = () => {
       sourceType: 'csv_truth',
       nameEn: `${group.storm}(${group.year})`,
       nameZh: `${zhName}(${group.year})`,
-      data: sortedRows.map(mapCsvRowToPoint),
+      data: sortedRows.map(({ truthRow, idolRow }) => mapCsvRowsToPoint(truthRow, idolRow)),
     };
   });
 
@@ -223,7 +165,7 @@ const run = () => {
   const { cases, skipped } = buildCases();
 
   if (!cases.length) {
-    throw new Error(`No typhoon cases generated from ${CSV_PATH}`);
+    throw new Error(`No typhoon cases generated from ${IDOL_CSV_PATH}`);
   }
 
   fs.writeFileSync(TARGET_JSON_PATH, `${JSON.stringify(cases, null, 2)}\n`, 'utf8');
@@ -233,7 +175,7 @@ const run = () => {
   }
 
   for (const [storm, count] of Array.from(skipped.entries()).sort()) {
-    console.log(`Skipped ${storm}: ${count} rows without R34 or matching H5`);
+    console.log(`Skipped ${storm}: ${count} IDOL rows without matching ibtracs truth`);
   }
 
   console.log(`Updated ${TARGET_JSON_PATH}`);

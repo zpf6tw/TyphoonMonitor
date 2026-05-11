@@ -45,6 +45,9 @@ const rootDir = path.resolve(args.get('root') || 'image');
 const objectPrefix = normalizeObjectPrefix(args.get('prefix') || 'image');
 const concurrency = Math.max(1, Number.parseInt(args.get('concurrency') || '3', 10));
 const cacheControl = args.get('cache-control') || DEFAULT_CACHE_CONTROL;
+const signedPayload = args.has('signed-payload');
+const skipExisting = !args.has('no-skip');
+const limit = args.has('limit') ? Math.max(1, Number.parseInt(args.get('limit'), 10)) : null;
 
 function normalizeObjectPrefix(value) {
   return String(value || '')
@@ -89,7 +92,7 @@ function encodeObjectPath(value) {
     .join('/');
 }
 
-function buildSignedHeaders({ method, objectKey, contentLength, contentType, payloadHash }) {
+function buildSignedHeaders({ method, objectKey, headers: inputHeaders = {}, payloadHash }) {
   const now = new Date();
   const amzDate = toAmzDate(now);
   const dateStamp = amzDate.slice(0, 8);
@@ -99,12 +102,12 @@ function buildSignedHeaders({ method, objectKey, contentLength, contentType, pay
   const canonicalUri = `/${bucket}/${encodeObjectPath(objectKey)}`;
 
   const headers = {
-    'cache-control': cacheControl,
-    'content-length': String(contentLength),
-    'content-type': contentType,
     host,
     'x-amz-content-sha256': payloadHash,
     'x-amz-date': amzDate,
+    ...Object.fromEntries(
+      Object.entries(inputHeaders).map(([name, value]) => [name.toLowerCase(), String(value)])
+    ),
   };
 
   const headerNames = Object.keys(headers).sort();
@@ -134,15 +137,13 @@ function buildSignedHeaders({ method, objectKey, contentLength, contentType, pay
 
   return {
     requestPath: canonicalUri,
-    headers: {
-      'Cache-Control': cacheControl,
-      'Content-Length': String(contentLength),
-      'Content-Type': contentType,
-      Host: host,
-      'X-Amz-Content-Sha256': payloadHash,
-      'X-Amz-Date': amzDate,
-      Authorization: `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
-    },
+    headers: Object.fromEntries([
+      ...Object.entries(inputHeaders),
+      ['Host', host],
+      ['X-Amz-Content-Sha256', payloadHash],
+      ['X-Amz-Date', amzDate],
+      ['Authorization', `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`],
+    ]),
   };
 }
 
@@ -180,12 +181,20 @@ async function uploadFile(filePath) {
   const relativePath = path.relative(rootDir, filePath).replace(/\\/g, '/');
   const objectKey = objectPrefix ? `${objectPrefix}/${relativePath}` : relativePath;
   const stat = await fsp.stat(filePath);
-  const payloadHash = await hashFile(filePath);
+  const payloadHash = signedPayload ? await hashFile(filePath) : 'UNSIGNED-PAYLOAD';
+
+  if (skipExisting && await objectExistsWithSize(objectKey, stat.size)) {
+    return { objectKey, size: stat.size, skipped: true };
+  }
+
   const { requestPath, headers } = buildSignedHeaders({
     method: 'PUT',
     objectKey,
-    contentLength: stat.size,
-    contentType: contentTypeFor(filePath),
+    headers: {
+      'Cache-Control': cacheControl,
+      'Content-Length': String(stat.size),
+      'Content-Type': contentTypeFor(filePath),
+    },
     payloadHash,
   });
 
@@ -214,7 +223,42 @@ async function uploadFile(filePath) {
     fs.createReadStream(filePath).on('error', reject).pipe(request);
   });
 
-  return { objectKey, size: stat.size };
+  return { objectKey, size: stat.size, skipped: false };
+}
+
+async function objectExistsWithSize(objectKey, expectedSize) {
+  const { requestPath, headers } = buildSignedHeaders({
+    method: 'HEAD',
+    objectKey,
+    payloadHash: 'UNSIGNED-PAYLOAD',
+  });
+
+  return await new Promise((resolve, reject) => {
+    const request = https.request({
+      method: 'HEAD',
+      hostname: `${accountId}.r2.cloudflarestorage.com`,
+      path: requestPath,
+      headers,
+    }, response => {
+      response.resume();
+      response.on('end', () => {
+        if (response.statusCode === 404 || response.statusCode === 403) {
+          resolve(false);
+          return;
+        }
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          resolve(Number(response.headers['content-length']) === expectedSize);
+          return;
+        }
+
+        reject(new Error(`R2 HEAD failed with HTTP ${response.statusCode}`));
+      });
+    });
+
+    request.on('error', reject);
+    request.end();
+  });
 }
 
 async function uploadWithRetry(filePath) {
@@ -237,8 +281,10 @@ async function uploadWithRetry(filePath) {
 }
 
 async function main() {
-  const files = (await walkFiles(rootDir)).sort((left, right) => left.localeCompare(right));
+  const allFiles = (await walkFiles(rootDir)).sort((left, right) => left.localeCompare(right));
+  const files = limit ? allFiles.slice(0, limit) : allFiles;
   let uploaded = 0;
+  let skipped = 0;
   let uploadedBytes = 0;
   let nextIndex = 0;
 
@@ -250,14 +296,18 @@ async function main() {
       const fileIndex = nextIndex;
       nextIndex += 1;
       const result = await uploadWithRetry(files[fileIndex]);
-      uploaded += 1;
-      uploadedBytes += result.size;
-      console.log(`[${uploaded}/${files.length}] ${result.objectKey}`);
+      if (result.skipped) {
+        skipped += 1;
+      } else {
+        uploaded += 1;
+        uploadedBytes += result.size;
+      }
+      console.log(`[${uploaded + skipped}/${files.length}] ${result.skipped ? 'skip' : 'put '} ${result.objectKey}`);
     }
   }
 
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
-  console.log(`Done. Uploaded ${(uploadedBytes / 1024 / 1024).toFixed(2)} MiB.`);
+  console.log(`Done. Uploaded ${uploaded} files (${(uploadedBytes / 1024 / 1024).toFixed(2)} MiB), skipped ${skipped} files.`);
 }
 
 main().catch(error => {

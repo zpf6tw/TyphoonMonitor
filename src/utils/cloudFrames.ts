@@ -1,3 +1,6 @@
+import type { TyphoonCase, TyphoonPoint } from '../types';
+import typhoonData from '../data/typhoonData.json';
+
 export interface CloudFrameMeta {
     id: string;
     timestamp: string;
@@ -21,17 +24,14 @@ const STYLE_DIR_BY_MODE: Record<CloudImageMode, string> = {
     coolWhite: 'cool_white',
 };
 
-const PSEUDO_COLOR_MODULES = import.meta.glob('../../image/zpf/*/pseudo_color/*.webp', {
-    eager: true,
-    import: 'default',
-}) as Record<string, string>;
+const normalizeBaseUrl = (value?: string): string => {
+    const trimmedValue = String(value || '').trim().replace(/\/+$/, '');
+    return trimmedValue || '/image';
+};
 
-const COOL_WHITE_MODULES = import.meta.glob('../../image/zpf/*/cool_white/*.webp', {
-    eager: true,
-    import: 'default',
-}) as Record<string, string>;
+const CLOUD_IMAGE_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_CLOUD_IMAGE_BASE_URL);
 
-const FRAME_FILE_PATTERN = /NC_H08_(\d{8})_(\d{4})_.*\.webp$/i;
+const POINT_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/;
 
 const formatFullLabel = (dateCode: string, timeCode: string): string => {
     const year = dateCode.slice(0, 4);
@@ -50,76 +50,86 @@ const formatShortLabel = (dateCode: string, timeCode: string): string => {
     return `${month}-${day} ${hour}:${minute}`;
 };
 
-const parseFrame = (filePath: string, url: string): CloudFrameMeta | null => {
-    const fileName = filePath.split('/').pop() || filePath;
-    const match = fileName.match(FRAME_FILE_PATTERN);
+const extractFrameCodes = (time: string): { dateCode: string; timeCode: string } | null => {
+    const match = String(time).match(POINT_TIME_PATTERN);
     if (!match) {
         return null;
     }
 
-    const [, dateCode, timeCode] = match;
+    const [, year, month, day, hour, minute] = match;
+    return {
+        dateCode: `${year}${month}${day}`,
+        timeCode: `${hour}${minute}`,
+    };
+};
+
+const buildFrameFileName = (dateCode: string, timeCode: string): string =>
+    `NC_H08_${dateCode}_${timeCode}_R21_FLDK.02401_02401_ch13.webp`;
+
+const buildCloudImageUrl = (stormKey: StormCloudKey, mode: CloudImageMode, fileName: string): string =>
+    [
+        CLOUD_IMAGE_BASE_URL,
+        'zpf',
+        encodeURIComponent(stormKey),
+        STYLE_DIR_BY_MODE[mode],
+        encodeURIComponent(fileName),
+    ].join('/');
+
+const buildFrame = (
+    point: TyphoonPoint,
+    stormKey: StormCloudKey,
+    mode: CloudImageMode
+): CloudFrameMeta | null => {
+    const frameCodes = extractFrameCodes(point.time);
+    if (!frameCodes) {
+        return null;
+    }
+
+    const { dateCode, timeCode } = frameCodes;
     const timestamp = `${dateCode}${timeCode.slice(0, 2)}`;
+    const fileName = buildFrameFileName(dateCode, timeCode);
 
     return {
         id: timestamp,
         timestamp,
         shortLabel: formatShortLabel(dateCode, timeCode),
         fullLabel: formatFullLabel(dateCode, timeCode),
-        url,
+        url: buildCloudImageUrl(stormKey, mode, fileName),
     };
 };
 
-const extractStormKey = (filePath: string, mode: CloudImageMode): string | null => {
-    const styleDir = STYLE_DIR_BY_MODE[mode];
-    const normalizedPath = filePath.replace(/\\/g, '/');
-    const match = normalizedPath.match(new RegExp(`/image/zpf/([^/]+)/${styleDir}/`));
-    return match ? match[1].toUpperCase() : null;
-};
-
-const groupModulesByStorm = (
-    mode: CloudImageMode,
-    modules: Record<string, string>
-): Record<StormCloudKey, Record<string, string>> => {
-    const grouped: Record<StormCloudKey, Record<string, string>> = {};
-
-    for (const [filePath, url] of Object.entries(modules)) {
-        const stormKey = extractStormKey(filePath, mode);
-        if (!stormKey) {
-            continue;
-        }
-
-        grouped[stormKey] ||= {};
-        grouped[stormKey][filePath] = url;
+const extractStormKeyFromCase = (typhoonCase: TyphoonCase): StormCloudKey | null => {
+    const code = String(typhoonCase.stormCode || '').trim().toUpperCase();
+    if (code) {
+        return code.split('_')[0];
     }
 
-    return grouped;
+    const nameMatch = String(typhoonCase.nameEn || '').trim().toUpperCase().match(/^([A-Z-]+)/);
+    return nameMatch ? nameMatch[1] : null;
 };
 
-const buildCloudFrames = (modules: Record<string, string>): CloudFrameMeta[] => {
-    return Object.entries(modules)
-        .map(([filePath, url]) => parseFrame(filePath, url))
+const buildCloudFrames = (
+    points: TyphoonPoint[],
+    stormKey: StormCloudKey,
+    mode: CloudImageMode
+): CloudFrameMeta[] => {
+    return points
+        .map((point) => buildFrame(point, stormKey, mode))
         .filter((frame): frame is CloudFrameMeta => frame !== null)
         .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 };
 
 const buildCloudFramesByStorm = (): Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>> => {
-    const modulesByMode: Record<CloudImageMode, Record<StormCloudKey, Record<string, string>>> = {
-        pseudoColor: groupModulesByStorm('pseudoColor', PSEUDO_COLOR_MODULES),
-        coolWhite: groupModulesByStorm('coolWhite', COOL_WHITE_MODULES),
-    };
+    return (typhoonData as TyphoonCase[]).reduce<Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>>>(
+        (result, typhoonCase) => {
+            const stormKey = extractStormKeyFromCase(typhoonCase);
+            if (!stormKey) {
+                return result;
+            }
 
-    const stormKeys = Array.from(
-        new Set([
-            ...Object.keys(modulesByMode.pseudoColor),
-            ...Object.keys(modulesByMode.coolWhite),
-        ])
-    ).sort((left, right) => left.localeCompare(right));
-
-    return stormKeys.reduce<Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>>>(
-        (result, stormKey) => {
             result[stormKey] = {
-                pseudoColor: buildCloudFrames(modulesByMode.pseudoColor[stormKey] || {}),
-                coolWhite: buildCloudFrames(modulesByMode.coolWhite[stormKey] || {}),
+                pseudoColor: buildCloudFrames(typhoonCase.data, stormKey, 'pseudoColor'),
+                coolWhite: buildCloudFrames(typhoonCase.data, stormKey, 'coolWhite'),
             };
             return result;
         },

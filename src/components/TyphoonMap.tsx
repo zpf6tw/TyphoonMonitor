@@ -29,9 +29,34 @@ interface TyphoonMapProps {
 const loadedCloudUrls = new Set<string>();
 const decodedCloudUrls = new Set<string>();
 const loadingCloudPromises = new Map<string, Promise<void>>();
+const CLOUD_PRELOAD_CONCURRENCY = 3;
+const CLOUD_NEAR_PRELOAD_RADIUS = 2;
+const CLOUD_FAR_PRELOAD_COUNT_PLAYING = 2;
+const CLOUD_FAR_PRELOAD_COUNT_IDLE = 4;
+
+type CloudPreloadPriority = 'high' | 'normal' | 'idle';
+
+interface QueuedCloudPreload {
+  promiseKey: string;
+  priority: number;
+  sequence: number;
+  run: () => void;
+}
+
+const CLOUD_PRELOAD_PRIORITIES: Record<CloudPreloadPriority, number> = {
+  high: 0,
+  normal: 1,
+  idle: 2,
+};
+
+let activeCloudPreloadCount = 0;
+let cloudPreloadSequence = 0;
+const queuedCloudPreloads: QueuedCloudPreload[] = [];
+const queuedCloudPreloadsByKey = new Map<string, QueuedCloudPreload>();
 
 interface PreloadCloudOptions {
   waitForDecode?: boolean;
+  priority?: CloudPreloadPriority;
 }
 
 interface MapControllerProps {
@@ -47,12 +72,55 @@ const FIXED_IMAGE_BOUNDS: L.LatLngBoundsLiteral = [
   [60, 200],
 ];
 
+const runNextCloudPreload = () => {
+  if (activeCloudPreloadCount >= CLOUD_PRELOAD_CONCURRENCY || queuedCloudPreloads.length === 0) {
+    return;
+  }
+
+  queuedCloudPreloads.sort((left, right) => left.priority - right.priority || left.sequence - right.sequence);
+  const nextPreload = queuedCloudPreloads.shift();
+  if (!nextPreload) {
+    return;
+  }
+
+  queuedCloudPreloadsByKey.delete(nextPreload.promiseKey);
+  activeCloudPreloadCount += 1;
+  nextPreload.run();
+};
+
+const finishCloudPreload = () => {
+  activeCloudPreloadCount = Math.max(0, activeCloudPreloadCount - 1);
+  runNextCloudPreload();
+};
+
+const scheduleCloudPreload = (promiseKey: string, priority: CloudPreloadPriority, run: () => void) => {
+  const preloadTask = {
+    promiseKey,
+    priority: CLOUD_PRELOAD_PRIORITIES[priority],
+    sequence: cloudPreloadSequence,
+    run,
+  };
+  queuedCloudPreloads.push(preloadTask);
+  queuedCloudPreloadsByKey.set(promiseKey, preloadTask);
+  cloudPreloadSequence += 1;
+  runNextCloudPreload();
+};
+
+const boostQueuedCloudPreload = (promiseKey: string, priority: CloudPreloadPriority) => {
+  const preloadTask = queuedCloudPreloadsByKey.get(promiseKey);
+  if (!preloadTask) {
+    return;
+  }
+
+  preloadTask.priority = Math.min(preloadTask.priority, CLOUD_PRELOAD_PRIORITIES[priority]);
+};
+
 const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Promise<void> => {
   if (!url) {
     return Promise.resolve();
   }
 
-  const { waitForDecode = true } = options;
+  const { waitForDecode = true, priority = 'normal' } = options;
   const promiseKey = `${url}|${waitForDecode ? 'decode' : 'raw'}`;
 
   if ((waitForDecode ? decodedCloudUrls : loadedCloudUrls).has(url)) {
@@ -61,37 +129,49 @@ const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Prom
 
   const existing = loadingCloudPromises.get(promiseKey);
   if (existing) {
+    boostQueuedCloudPreload(promiseKey, priority);
     return existing;
   }
 
   const promise = new Promise<void>((resolve, reject) => {
-    const image = new Image();
-    image.decoding = 'async';
-    image.onload = async () => {
-      // 播放时优先解码平滑，拖动跳转时优先快速出图。
-      if (waitForDecode) {
-        try {
-          if (typeof image.decode === 'function') {
-            await image.decode();
+    scheduleCloudPreload(promiseKey, priority, () => {
+      if ((waitForDecode ? decodedCloudUrls : loadedCloudUrls).has(url)) {
+        loadingCloudPromises.delete(promiseKey);
+        finishCloudPreload();
+        resolve();
+        return;
+      }
+
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = async () => {
+        // 播放时优先解码平滑，拖动跳转时优先快速出图。
+        if (waitForDecode) {
+          try {
+            if (typeof image.decode === 'function') {
+              await image.decode();
+            }
+          } catch {
+            // decode 失败时退回到普通 onload 结果
           }
-        } catch {
-          // decode 失败时退回到普通 onload 结果
         }
-      }
 
-      if (waitForDecode) {
-        decodedCloudUrls.add(url);
-      }
+        if (waitForDecode) {
+          decodedCloudUrls.add(url);
+        }
 
-      loadedCloudUrls.add(url);
-      loadingCloudPromises.delete(promiseKey);
-      resolve();
-    };
-    image.onerror = () => {
-      loadingCloudPromises.delete(promiseKey);
-      reject(new Error(`Failed to preload cloud frame: ${url}`));
-    };
-    image.src = url;
+        loadedCloudUrls.add(url);
+        loadingCloudPromises.delete(promiseKey);
+        finishCloudPreload();
+        resolve();
+      };
+      image.onerror = () => {
+        loadingCloudPromises.delete(promiseKey);
+        finishCloudPreload();
+        reject(new Error(`Failed to preload cloud frame: ${url}`));
+      };
+      image.src = url;
+    });
   });
 
   loadingCloudPromises.set(promiseKey, promise);
@@ -317,7 +397,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
 
     const shouldWaitForDecode = isPlaying && !isScrubbing;
 
-    preloadCloudImage(targetCloudImageUrl, { waitForDecode: shouldWaitForDecode })
+    preloadCloudImage(targetCloudImageUrl, { waitForDecode: shouldWaitForDecode, priority: 'high' })
       .then(() => {
         if (!isCancelled && latestRequestedUrl.current === targetCloudImageUrl) {
           setActiveCloudImageUrl(targetCloudImageUrl);
@@ -347,8 +427,8 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       return;
     }
 
-    const around: string[] = [];
-    for (let offset = 1; offset <= 2; offset += 1) {
+    const around = new Set<string>();
+    for (let offset = 1; offset <= CLOUD_NEAR_PRELOAD_RADIUS; offset += 1) {
       const next = currentIndex + offset;
       const prev = currentIndex - offset;
 
@@ -356,33 +436,31 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
       const prevUrl = prev >= 0 ? availableCloudFrameUrls[prev] : null;
 
       if (nextUrl) {
-        around.push(nextUrl);
+        around.add(nextUrl);
       }
       if (prevUrl) {
-        around.push(prevUrl);
+        around.add(prevUrl);
       }
     }
 
-    around.forEach(url => {
-      void preloadCloudImage(url)
+    around.forEach((url) => {
+      void preloadCloudImage(url, { waitForDecode: true, priority: 'normal' })
         .then(() => {
           notifyCloudFrameLoaded(url);
         })
         .catch(() => undefined);
     });
 
-    const farAheadWindow = isPlaying ? 8 : 25;
+    const farAheadCount = isPlaying ? CLOUD_FAR_PRELOAD_COUNT_PLAYING : CLOUD_FAR_PRELOAD_COUNT_IDLE;
+    const farAheadStart = currentIndex + CLOUD_NEAR_PRELOAD_RADIUS + 1;
     const farAhead = availableCloudFrameUrls
-      .slice(currentIndex + 3, currentIndex + farAheadWindow)
+      .slice(farAheadStart, farAheadStart + farAheadCount)
       .filter((url): url is string => Boolean(url));
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     const prefetchFarFrames = () => {
       farAhead.forEach(url => {
-        void preloadCloudImage(url)
-          .then(() => {
-            notifyCloudFrameLoaded(url);
-          })
+        void preloadCloudImage(url, { waitForDecode: false, priority: 'idle' })
           .catch(() => undefined);
       });
     };

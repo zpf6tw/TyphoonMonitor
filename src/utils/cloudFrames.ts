@@ -24,9 +24,11 @@ const STYLE_DIR_BY_MODE: Record<CloudImageMode, string> = {
     coolWhite: 'cool_white',
 };
 
+const DEFAULT_CLOUD_IMAGE_BASE_URL = 'https://image-1419775048.cos.ap-shanghai.myqcloud.com/image';
+
 const normalizeBaseUrl = (value?: string): string => {
     const trimmedValue = String(value || '').trim().replace(/\/+$/, '');
-    return trimmedValue || '/image';
+    return trimmedValue || DEFAULT_CLOUD_IMAGE_BASE_URL;
 };
 
 const CLOUD_IMAGE_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_CLOUD_IMAGE_BASE_URL);

@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "sync:typhoon-data": "node generate_json.cjs",
+    "upload:cloud-images": "node scripts/upload-cos-images.mjs",
     "convert:cloud": "python ../image_processor/process_atsani_h5_to_webp.py",
     "convert:cloud:overwrite": "python ../image_processor/process_atsani_h5_to_webp.py --overwrite",
     "convert:cloud:keep-unselected": "python ../image_processor/process_atsani_h5_to_webp.py --keep-unselected-outputs"
@@ -28,7 +29,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

@@ -1,11 +1,20 @@
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
 import { Language, TyphoonPoint } from '../types';
-import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../utils/cloudFrames';
+import { CloudImageMode } from '../utils/cloudFrames';
+import {
+  CLOUD_FAR_PRELOAD_COUNT_IDLE,
+  CLOUD_FAR_PRELOAD_COUNT_PLAYING,
+  CLOUD_NEAR_PRELOAD_RADIUS,
+  isCloudImageDecoded,
+  isCloudImageLoaded,
+  preloadCloudImage,
+} from '../utils/cloudImagePreloader';
+import { CloudTemperatureLegend } from './typhoon/CloudTemperatureLegend';
 
-// 修复默认标记图标
+// Leaflet 默认图标在 Vite 打包后路径可能丢失，因此显式指定 CDN 资源。
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -24,39 +33,13 @@ interface TyphoonMapProps {
   isScrubbing?: boolean;
   legendLeftClassName?: string;
   onCloudFrameLoaded?: (frameIndex: number) => void;
+  linkedTyphoon?: LinkedTyphoonOverlay | null;
 }
 
-const loadedCloudUrls = new Set<string>();
-const decodedCloudUrls = new Set<string>();
-const loadingCloudPromises = new Map<string, Promise<void>>();
-const CLOUD_PRELOAD_CONCURRENCY = 3;
-const CLOUD_NEAR_PRELOAD_RADIUS = 2;
-const CLOUD_FAR_PRELOAD_COUNT_PLAYING = 2;
-const CLOUD_FAR_PRELOAD_COUNT_IDLE = 4;
-
-type CloudPreloadPriority = 'high' | 'normal' | 'idle';
-
-interface QueuedCloudPreload {
-  promiseKey: string;
-  priority: number;
-  sequence: number;
-  run: () => void;
-}
-
-const CLOUD_PRELOAD_PRIORITIES: Record<CloudPreloadPriority, number> = {
-  high: 0,
-  normal: 1,
-  idle: 2,
-};
-
-let activeCloudPreloadCount = 0;
-let cloudPreloadSequence = 0;
-const queuedCloudPreloads: QueuedCloudPreload[] = [];
-const queuedCloudPreloadsByKey = new Map<string, QueuedCloudPreload>();
-
-interface PreloadCloudOptions {
-  waitForDecode?: boolean;
-  priority?: CloudPreloadPriority;
+interface LinkedTyphoonOverlay {
+  name: string;
+  data: TyphoonPoint[];
+  currentIndex: number;
 }
 
 interface MapControllerProps {
@@ -66,142 +49,33 @@ interface MapControllerProps {
   isScrubbing: boolean;
 }
 
-// 固定边界使用稳定引用，避免每次渲染触发地图约束与覆盖层重置。
+// 云图覆盖范围固定为西北太平洋主要展示区，稳定引用可避免地图约束反复重算。
 const FIXED_IMAGE_BOUNDS: L.LatLngBoundsLiteral = [
   [-60, 80],
   [60, 200],
 ];
 
-const runNextCloudPreload = () => {
-  if (activeCloudPreloadCount >= CLOUD_PRELOAD_CONCURRENCY || queuedCloudPreloads.length === 0) {
-    return;
-  }
-
-  queuedCloudPreloads.sort((left, right) => left.priority - right.priority || left.sequence - right.sequence);
-  const nextPreload = queuedCloudPreloads.shift();
-  if (!nextPreload) {
-    return;
-  }
-
-  queuedCloudPreloadsByKey.delete(nextPreload.promiseKey);
-  activeCloudPreloadCount += 1;
-  nextPreload.run();
-};
-
-const finishCloudPreload = () => {
-  activeCloudPreloadCount = Math.max(0, activeCloudPreloadCount - 1);
-  runNextCloudPreload();
-};
-
-const scheduleCloudPreload = (promiseKey: string, priority: CloudPreloadPriority, run: () => void) => {
-  const preloadTask = {
-    promiseKey,
-    priority: CLOUD_PRELOAD_PRIORITIES[priority],
-    sequence: cloudPreloadSequence,
-    run,
-  };
-  queuedCloudPreloads.push(preloadTask);
-  queuedCloudPreloadsByKey.set(promiseKey, preloadTask);
-  cloudPreloadSequence += 1;
-  runNextCloudPreload();
-};
-
-const boostQueuedCloudPreload = (promiseKey: string, priority: CloudPreloadPriority) => {
-  const preloadTask = queuedCloudPreloadsByKey.get(promiseKey);
-  if (!preloadTask) {
-    return;
-  }
-
-  preloadTask.priority = Math.min(preloadTask.priority, CLOUD_PRELOAD_PRIORITIES[priority]);
-};
-
-const preloadCloudImage = (url: string, options: PreloadCloudOptions = {}): Promise<void> => {
-  if (!url) {
-    return Promise.resolve();
-  }
-
-  const { waitForDecode = true, priority = 'normal' } = options;
-  const promiseKey = `${url}|${waitForDecode ? 'decode' : 'raw'}`;
-
-  if ((waitForDecode ? decodedCloudUrls : loadedCloudUrls).has(url)) {
-    return Promise.resolve();
-  }
-
-  const existing = loadingCloudPromises.get(promiseKey);
-  if (existing) {
-    boostQueuedCloudPreload(promiseKey, priority);
-    return existing;
-  }
-
-  const promise = new Promise<void>((resolve, reject) => {
-    scheduleCloudPreload(promiseKey, priority, () => {
-      if ((waitForDecode ? decodedCloudUrls : loadedCloudUrls).has(url)) {
-        loadingCloudPromises.delete(promiseKey);
-        finishCloudPreload();
-        resolve();
-        return;
-      }
-
-      const image = new Image();
-      image.decoding = 'async';
-      image.onload = async () => {
-        // 播放时优先解码平滑，拖动跳转时优先快速出图。
-        if (waitForDecode) {
-          try {
-            if (typeof image.decode === 'function') {
-              await image.decode();
-            }
-          } catch {
-            // decode 失败时退回到普通 onload 结果
-          }
-        }
-
-        if (waitForDecode) {
-          decodedCloudUrls.add(url);
-        }
-
-        loadedCloudUrls.add(url);
-        loadingCloudPromises.delete(promiseKey);
-        finishCloudPreload();
-        resolve();
-      };
-      image.onerror = () => {
-        loadingCloudPromises.delete(promiseKey);
-        finishCloudPreload();
-        reject(new Error(`Failed to preload cloud frame: ${url}`));
-      };
-      image.src = url;
-    });
-  });
-
-  loadingCloudPromises.set(promiseKey, promise);
-  return promise;
-};
-
 const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying, isScrubbing }) => {
   const map = useMap();
 
-  // 处理边界和缩放限制
+  // 地图边界随容器尺寸重新计算，保证左右面板开合后不会露出无底图区域。
   useEffect(() => {
     const leafletBounds = L.latLngBounds(bounds);
 
     const updateMapConstraints = () => {
       map.invalidateSize();
-      // inside=true 确保地图视口始终完全包含在 bounds 内，防止出现灰色未覆盖区域
+      // inside=true 要求完整视口落在 bounds 内，适合固定云图覆盖范围。
       const minZoom = map.getBoundsZoom(leafletBounds, true);
       map.setMinZoom(minZoom);
       map.setMaxBounds(leafletBounds);
 
-      // 如果当前缩放级别小于新的最小缩放级别，则自动放大
       if (map.getZoom() < minZoom) {
         map.setZoom(minZoom);
       }
     };
 
-    // 初始化更新
     updateMapConstraints();
 
-    // 监听容器大小变化（如侧边栏收缩/展开）
     const resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(() => {
         updateMapConstraints();
@@ -215,7 +89,7 @@ const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying
     };
   }, [map, bounds]);
 
-  // 处理中心点平移
+  // 播放或拖动时不自动平移地图，避免用户观察路径时视野被频繁打断。
   useEffect(() => {
     if (isScrubbing || isPlaying) {
       return;
@@ -227,70 +101,11 @@ const MapController: React.FC<MapControllerProps> = ({ center, bounds, isPlaying
   return null;
 };
 
-// 内风圈保持恒定颜色，防止模拟过程中颜色偏移
+// 颜色常量集中维护，确保主台风、联动台风和云图叠加层在地图上语义稳定。
 const INNER_RING_COLOR = '#3b82f6';
 const CLOUD_OVERLAY_OPACITY = 1;
-
-interface CloudLegendStop {
-  color: string;
-  position: number;
-}
-
-const CLOUD_TEMPERATURE_LEGENDS: Record<CloudImageMode, CloudLegendStop[]> = {
-  pseudoColor: [
-    { color: '#6b8094', position: 0 },
-    { color: '#b8d1eb', position: 10 },
-    { color: '#f5faff', position: 24 },
-    { color: '#ffeb80', position: 40 },
-    { color: '#ff8a33', position: 56 },
-    { color: '#eb242e', position: 72 },
-    { color: '#c21fd1', position: 88 },
-    { color: '#3ddcff', position: 100 },
-  ],
-  coolWhite: [
-    { color: '#4d617a', position: 0 },
-    { color: '#8aa8c7', position: 14 },
-    { color: '#c2dbf0', position: 30 },
-    { color: '#ebf7ff', position: 50 },
-    { color: '#ffffff', position: 72 },
-    { color: '#d1f0ff', position: 88 },
-    { color: '#9ed6ff', position: 100 },
-  ],
-};
-
-const buildLegendGradient = (mode: CloudImageMode): string => {
-  const stops = CLOUD_TEMPERATURE_LEGENDS[mode]
-    .map(stop => `${stop.color} ${stop.position}%`)
-    .join(', ');
-  return `linear-gradient(90deg, ${stops})`;
-};
-
-const CloudTemperatureLegend: React.FC<{ mode: CloudImageMode; language: Language; leftClassName: string }> = ({ mode, language, leftClassName }) => (
-  <div className={`absolute top-[7.75rem] ${leftClassName} z-[1000] w-[280px] rounded-2xl border border-white bg-white/95 backdrop-blur-md p-3 shadow-xl pointer-events-none`}>
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[11px] font-bold text-slate-700">
-        {CLOUD_IMAGE_MODE_LABELS[mode][language]}
-      </span>
-      <span className="text-[10px] font-semibold text-slate-400">
-        {language === 'en' ? 'BT (K)' : '亮温 (K)'}
-      </span>
-    </div>
-    <div
-      className="mt-2 h-3 w-full rounded-sm border border-slate-200"
-      style={{ background: buildLegendGradient(mode) }}
-    />
-    <div className="mt-1 flex justify-between text-[9px] font-semibold text-slate-500">
-      <span>290K</span>
-      <span>240K</span>
-      <span>190K</span>
-    </div>
-    <p className="mt-2 text-[10px] leading-snug text-slate-500">
-      {language === 'en'
-        ? 'Himawari-8 infrared Band 13, lower brightness temperature means colder cloud tops.'
-        : '使用葵花8号红外波段13通道数据，亮温越低表示云顶越冷。'}
-    </p>
-  </div>
-);
+const LINKED_STORM_COLOR = '#f59e0b';
+const EMPTY_CLOUD_FRAME_URLS: Array<string | null> = [];
 
 export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   data,
@@ -303,18 +118,25 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
   isScrubbing = false,
   legendLeftClassName = 'left-6',
   onCloudFrameLoaded,
+  linkedTyphoon,
 }) => {
   const [activeCloudImageUrl, setActiveCloudImageUrl] = useState<string | null>(null);
   const [displayedCloudImageUrl, setDisplayedCloudImageUrl] = useState<string | null>(null);
-  const [displayedCloudFrameIndex, setDisplayedCloudFrameIndex] = useState<number | null>(null);
   const latestRequestedUrl = useRef<string | null>(null);
 
+  // Leaflet 路径只需要经纬度数组，缓存派生结果可避免地图层在无关状态变化时重建。
   const path = useMemo(() => data.map(p => [p.lat, p.lng] as [number, number]), [data]);
+  const linkedPath = useMemo(
+    () => linkedTyphoon?.data.map(p => [p.lat, p.lng] as [number, number]) || [],
+    [linkedTyphoon?.data]
+  );
 
-  // 固定的云图覆盖范围：60°S - 60°N, 80°E - 160°W (200°E)
   const imageBounds = FIXED_IMAGE_BOUNDS;
 
-  const availableCloudFrameUrls = useMemo(() => cloudFrameUrls ?? [], [cloudFrameUrls]);
+  const availableCloudFrameUrls = useMemo(
+    () => cloudFrameUrls ?? EMPTY_CLOUD_FRAME_URLS,
+    [cloudFrameUrls]
+  );
   const hasCloudFrames = availableCloudFrameUrls.some(Boolean);
 
   const cloudUrlIndexMap = useMemo(() => {
@@ -327,7 +149,36 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     return map;
   }, [availableCloudFrameUrls]);
 
-  const notifyCloudFrameLoaded = (url: string) => {
+  // 当前时间点没有精确云图时，向前后查找最近可用帧，保证播放过程不断层。
+  const findNearestAvailableUrl = useCallback((targetIndex: number): string | null => {
+    if (!hasCloudFrames || targetIndex < 0) {
+      return null;
+    }
+
+    const maxDistance = Math.max(targetIndex, availableCloudFrameUrls.length - 1 - targetIndex);
+    for (let offset = 0; offset <= maxDistance; offset += 1) {
+      const previousIndex = targetIndex - offset;
+      if (previousIndex >= 0) {
+        const previousUrl = availableCloudFrameUrls[previousIndex];
+        if (previousUrl) {
+          return previousUrl;
+        }
+      }
+
+      const nextIndex = targetIndex + offset;
+      if (offset > 0 && nextIndex < availableCloudFrameUrls.length) {
+        const nextUrl = availableCloudFrameUrls[nextIndex];
+        if (nextUrl) {
+          return nextUrl;
+        }
+      }
+    }
+
+    return null;
+  }, [availableCloudFrameUrls, hasCloudFrames]);
+
+  // 云图实际完成加载后通知入口层，用于时间轴缓冲进度和自动播放推进控制。
+  const notifyCloudFrameLoaded = useCallback((url: string) => {
     if (!onCloudFrameLoaded) {
       return;
     }
@@ -336,32 +187,39 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     if (frameIndex !== undefined) {
       onCloudFrameLoaded(frameIndex);
     }
-  };
+  }, [cloudUrlIndexMap, onCloudFrameLoaded]);
 
-  const targetCloudImageUrl = hasCloudFrames
+  const exactCloudImageUrl = hasCloudFrames
     ? availableCloudFrameUrls[currentIndex] || null
     : null;
+  const targetCloudImageUrl = exactCloudImageUrl
+    ? exactCloudImageUrl
+    : hasCloudFrames
+      ? findNearestAvailableUrl(currentIndex)
+      : null;
 
+  // 目标帧索引用于保持路径、云图和缓冲状态对齐。
   const targetCloudFrameIndex = targetCloudImageUrl
-    ? currentIndex
+    ? cloudUrlIndexMap.get(targetCloudImageUrl) ?? currentIndex
     : -1;
 
-  const findNearestLoadedUrl = (targetIndex: number): string | null => {
+  // 新目标帧未加载时，优先回退到最近已加载历史帧，避免地图上出现空白闪烁。
+  const findNearestLoadedUrl = useCallback((targetIndex: number): string | null => {
     if (!hasCloudFrames || targetIndex < 0) {
       return null;
     }
 
     for (let index = targetIndex; index >= 0; index -= 1) {
       const url = availableCloudFrameUrls[index];
-      if (url && loadedCloudUrls.has(url)) {
+      if (url && isCloudImageLoaded(url)) {
         return url;
       }
     }
 
     return null;
-  };
+  }, [availableCloudFrameUrls, hasCloudFrames]);
 
-  const immediatelyRenderableCloudImageUrl = targetCloudImageUrl && loadedCloudUrls.has(targetCloudImageUrl)
+  const immediatelyRenderableCloudImageUrl = targetCloudImageUrl && isCloudImageLoaded(targetCloudImageUrl)
     ? targetCloudImageUrl
     : findNearestLoadedUrl(targetCloudFrameIndex);
 
@@ -370,20 +228,30 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
     ? cloudUrlIndexMap.get(renderedCloudImageUrl)
     : undefined;
   const synchronizedIndex = showCloudMap
+    && exactCloudImageUrl
     && targetCloudImageUrl
-    && renderedCloudImageUrl
-    && displayedCloudFrameIndex !== null
-    ? displayedCloudFrameIndex
+    && renderedCloudFrameIndex !== undefined
+    ? renderedCloudFrameIndex
     : currentIndex;
   const visualIndex = Math.min(Math.max(synchronizedIndex, 0), Math.max(0, data.length - 1));
   const currentPoint = data[visualIndex] || data[0];
   const currentPos = useMemo(() => [currentPoint.lat, currentPoint.lng] as [number, number], [currentPoint]);
+  // 联动台风只在同一时间点存在数据时显示当前位置，缺失时保留主台风视图。
+  const linkedVisualIndex = linkedTyphoon
+    ? Math.min(Math.max(linkedTyphoon.currentIndex, -1), Math.max(-1, linkedTyphoon.data.length - 1))
+    : -1;
+  const linkedCurrentPoint = linkedTyphoon && linkedVisualIndex >= 0
+    ? linkedTyphoon.data[linkedVisualIndex]
+    : null;
+  const linkedCurrentPos = linkedCurrentPoint
+    ? [linkedCurrentPoint.lat, linkedCurrentPoint.lng] as [number, number]
+    : null;
 
+  // 当前帧采用“先预加载、再切换”的策略，解码完成前保持上一张可见云图。
   useEffect(() => {
     if (!targetCloudImageUrl) {
       setActiveCloudImageUrl(null);
       setDisplayedCloudImageUrl(null);
-      setDisplayedCloudFrameIndex(null);
       return;
     }
 
@@ -403,25 +271,28 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           setActiveCloudImageUrl(targetCloudImageUrl);
         }
 
-        if (shouldWaitForDecode || decodedCloudUrls.has(targetCloudImageUrl)) {
+        if (shouldWaitForDecode || isCloudImageDecoded(targetCloudImageUrl)) {
           notifyCloudFrameLoaded(targetCloudImageUrl);
         }
       })
       .catch(() => {
-        // 保持上一帧，避免切换时出现空白闪烁
+        // 加载失败时保持上一帧，避免切换时出现空白闪烁。
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [targetCloudImageUrl, targetCloudFrameIndex, isPlaying, isScrubbing]);
+  }, [
+    activeCloudImageUrl,
+    findNearestLoadedUrl,
+    isPlaying,
+    isScrubbing,
+    notifyCloudFrameLoaded,
+    targetCloudFrameIndex,
+    targetCloudImageUrl,
+  ]);
 
-  useEffect(() => {
-    setActiveCloudImageUrl(null);
-    setDisplayedCloudImageUrl(null);
-    setDisplayedCloudFrameIndex(null);
-  }, [cloudFrameUrls, cloudMode]);
-
+  // 近邻帧优先解码，远端帧在空闲时预取，兼顾播放平滑和初始加载成本。
   useEffect(() => {
     if (!hasCloudFrames) {
       return;
@@ -484,7 +355,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [availableCloudFrameUrls, currentIndex, isPlaying, hasCloudFrames]);
+  }, [availableCloudFrameUrls, currentIndex, isPlaying, hasCloudFrames, notifyCloudFrameLoaded]);
 
   return (
     <div className="w-full h-full relative">
@@ -498,7 +369,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         className="z-0"
         zoomControl={false}
       >
-        {/* 切换到高德地图以支持中文标签和地缘政治合规性 */}
+        {/* 底图使用高德中文瓦片，保证中文标注和国内访问稳定性。 */}
         <TileLayer
           attribution='&copy; <a href="https://www.amap.com/">高德地图</a>'
           url="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
@@ -513,6 +384,25 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           opacity={0.6}
         />
 
+        {linkedPath.length > 0 && (
+          <Polyline
+            positions={linkedPath}
+            color={LINKED_STORM_COLOR}
+            weight={2}
+            dashArray="5, 10"
+            opacity={0.35}
+          />
+        )}
+
+        {linkedPath.length > 0 && linkedVisualIndex >= 0 && (
+          <Polyline
+            positions={linkedPath.slice(0, linkedVisualIndex + 1)}
+            color={LINKED_STORM_COLOR}
+            weight={3}
+            opacity={0.9}
+          />
+        )}
+
         <Polyline
           positions={path.slice(0, visualIndex + 1)}
           color="#3b82f6"
@@ -520,7 +410,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           opacity={1}
         />
 
-        {/* 卫星云图叠加层 */}
+        {/* 云图先以透明层完成加载，再替换可见层，减少 ImageOverlay 换帧闪烁。 */}
         {showCloudMap && displayedCloudImageUrl && displayedCloudImageUrl !== renderedCloudImageUrl && (
           <ImageOverlay
             key={`displayed-${displayedCloudImageUrl}`}
@@ -542,14 +432,42 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
               load: () => {
                 if (renderedCloudFrameIndex !== undefined) {
                   setDisplayedCloudImageUrl(renderedCloudImageUrl);
-                  setDisplayedCloudFrameIndex(renderedCloudFrameIndex);
                 }
               },
             }}
           />
         )}
 
-        {/* 外风圈 - 可视化 IDOL 预测结构 */}
+        {/* 联动台风使用橙色风圈，与主台风蓝色风圈区分。 */}
+        {linkedCurrentPoint && linkedCurrentPos && (
+          <>
+            <Circle
+              center={linkedCurrentPos}
+              radius={linkedCurrentPoint.outer_radius_pred * 1000}
+              pathOptions={{
+                color: LINKED_STORM_COLOR,
+                weight: 1,
+                fillOpacity: 0.05,
+                fillColor: LINKED_STORM_COLOR,
+                className: 'outer-wind-ring linked-outer-wind-ring'
+              }}
+            />
+
+            <Circle
+              center={linkedCurrentPos}
+              radius={linkedCurrentPoint.inner_radius_pred * 1000}
+              pathOptions={{
+                fillColor: LINKED_STORM_COLOR,
+                fillOpacity: 0.3,
+                color: '#fff',
+                weight: 2,
+                className: 'inner-wind-ring linked-inner-wind-ring'
+              }}
+            />
+          </>
+        )}
+
+        {/* 主台风风圈使用 IDOL 估计半径，和右上角参数对比面板保持一致。 */}
         <Circle
           center={currentPos}
           radius={currentPoint.outer_radius_pred * 1000}
@@ -562,7 +480,7 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
           }}
         />
 
-        {/* 内风圈 - 可视化 IDOL 预测结构 */}
+        {/* 内风圈突出 RMW 结构，配合呼吸动画强调当前中心强度区域。 */}
         <Circle
           center={currentPos}
           radius={currentPoint.inner_radius_pred * 1000}
@@ -578,11 +496,11 @@ export const TyphoonMap: React.FC<TyphoonMapProps> = ({
         <MapController center={currentPos} bounds={imageBounds} isPlaying={isPlaying} isScrubbing={isScrubbing} />
       </MapContainer>
 
-      {showCloudMap && displayedCloudImageUrl && (
+      {showCloudMap && hasCloudFrames && (
         <CloudTemperatureLegend mode={cloudMode} language={language} leftClassName={legendLeftClassName} />
       )}
 
-      {/* 内核呼吸动画样式 */}
+      {/* 呼吸动画仅作用于 Leaflet 生成的风圈路径，需要以内联样式注入到地图容器内。 */}
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes innerBreathing {

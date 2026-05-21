@@ -1,8 +1,6 @@
-# 智慧气象 AI 平台 / TyphoonMonitor
+# AI Meteorology
 
 **在线域名:** [aimeteorology.cn](http://www.aimeteorology.cn)
-
-TyphoonMonitor 是一个基于 React + Vite 的台风智能监测与实验室展示平台，包含台风路径与强度可视化、IDOL 模型估计结果对比、红外云图播放、实验室团队与论文展示等功能。
 
 ## 本地运行
 
@@ -12,13 +10,6 @@ TyphoonMonitor 是一个基于 React + Vite 的台风智能监测与实验室展
 npm install
 npm run dev
 ```
-
-常用脚本：
-
-- `npm run dev`：启动本地开发服务，默认端口为 `3000`
-- `npm run build`：构建生产版本到 `dist/`
-- `npm run preview`：预览生产构建结果
-- `npm run sync:typhoon-data`：根据上级目录中的 CSV 数据重新生成 `src/data/typhoonData.json`
 
 ## 技术栈
 
@@ -30,28 +21,23 @@ npm run dev
 - **动画:** Framer Motion
 - **图标:** Lucide React
 - **图表:** Recharts
-- **图片处理依赖:** Sharp
 
 ## 文件结构
 
 ```text
 TyphoonMonitor/
-├─ image/                         # 本地云图资源暂存目录，已被 .gitignore 忽略
-│  └─ zpf/
-│     ├─ ATSANI/
-│     │  ├─ cool_white/           # 冷白色云图 WebP
-│     │  └─ pseudo_color/         # 伪彩色云图 WebP
-│     ├─ GONI/
-│     ├─ IN-FA/
-│     ├─ NANGKA/
-│     ├─ TALAS/
-│     ├─ TAPAH/
-│     ├─ TRAMI/
-│     └─ WIPHA/
 ├─ scripts/
-│  └─ upload-r2-images.mjs        # 上传 image/ 目录到对象存储的脚本
+│  └─ upload-cos-images.mjs       # 上传 image/ 目录到腾讯云 COS / S3 兼容对象存储
 ├─ src/
 │  ├─ components/
+│  │  ├─ common/
+│  │  │  └─ CollapsiblePanel.tsx  # 通用折叠面板
+│  │  ├─ typhoon/
+│  │  │  ├─ CaseSelectorDropdown.tsx      # 台风案例选择下拉框
+│  │  │  ├─ CloudTemperatureLegend.tsx    # 云图亮温色标图例
+│  │  │  ├─ TyphoonAnalysisPanel.tsx      # 右侧特征、指标图表和物理先验面板
+│  │  │  ├─ TyphoonOverlayControls.tsx    # 地图顶部场次选择和实时参数浮层
+│  │  │  └─ TyphoonTimelineControls.tsx   # 底部播放、云图模式和时间轴控制
 │  │  ├─ LabPages.tsx             # 实验室概况、团队、研究方向、论文页面
 │  │  ├─ MetricsChart.tsx         # 指标对比图表
 │  │  ├─ Sidebar.tsx              # 侧边栏导航与语言切换
@@ -59,13 +45,19 @@ TyphoonMonitor/
 │  ├─ data/
 │  │  ├─ team.json                # 团队成员数据
 │  │  └─ typhoonData.json         # 台风案例与时间序列数据
+│  ├─ features/
+│  │  └─ typhoon/
+│  │     ├─ caseCatalog.ts        # 台风案例选项、双台风分组和案例介绍
+│  │     ├─ cloudFrameMatcher.ts  # 时间轴到云图帧 URL 的匹配
+│  │     └─ time.ts               # 台风时间标签格式化
 │  ├─ papers/
 │  │  └─ *.pdf                    # 学术成果 PDF，构建时自动收集
 │  ├─ utils/
-│  │  ├─ cloudFrames.ts           # 根据台风数据生成云图 URL 与时间轴映射
+│  │  ├─ cloudFrames.ts           # COS 云图 URL 生成与风暴云图索引
+│  │  ├─ cloudImagePreloader.ts   # 云图预加载、解码和缓存队列
 │  │  ├─ dataGenerator.ts         # 导出 typhoonData.json 中的案例数据
 │  │  └─ publicationPapers.ts     # 自动解析 papers/ 下的论文信息
-│  ├─ App.tsx                     # 应用主入口与视图状态管理
+│  ├─ App.tsx                     # 应用主入口与跨模块状态编排
 │  ├─ constants.tsx               # 中英文文案与全局常量
 │  ├─ index.css                   # 全局样式与 Tailwind 引入
 │  ├─ main.tsx                    # React 挂载入口
@@ -77,66 +69,15 @@ TyphoonMonitor/
 ├─ metadata.json                  # 项目元数据
 ├─ package.json                   # 依赖与 npm 脚本
 ├─ package-lock.json              # 依赖锁定文件
+├─ DEVELOPMENT.md                 # 项目开发文档和维护速查
 ├─ tsconfig.json                  # TypeScript 配置
 ├─ vercel.json                    # Vercel 部署配置
 └─ vite.config.ts                 # Vite 配置
 ```
 
-说明：`node_modules/`、`dist/`、`vite-dev.*.log` 等为依赖、构建产物或日志文件，不作为源码结构维护。
-
-
 ## 数据更新方法
 
-### 1. 更新台风路径与模型指标
-
-修改或替换以下 CSV 文件：
-
-- `../data/SelectedTyphoons_ibtracs.csv`
-- `../data/SelectedTyphoons_IDOL_Estimated.csv`
-
-然后在 `TyphoonMonitor/` 目录下运行：
-
-```bash
-npm run sync:typhoon-data
-```
-
-脚本会重新生成：
-
-```text
-src/data/typhoonData.json
-```
-
-前端地图、时间轴、指标图表会从该 JSON 中读取台风案例、经纬度、风速、气压、RMW、R34 等数据。
-
-### 2. 更新云图资源
-
-本地云图目录结构需要保持为：
-
-```text
-image/zpf/<台风英文名>/<云图类型>/NC_H08_YYYYMMDD_HHMM_R21_FLDK.02401_02401_ch13.webp
-```
-
-其中：
-
-- `<台风英文名>` 示例：`ATSANI`、`GONI`、`IN-FA`
-- `<云图类型>` 可选：`cool_white`、`pseudo_color`
-- 文件名中的时间需要与 `src/data/typhoonData.json` 中的时间点对应
-
-前端默认通过 `VITE_CLOUD_IMAGE_BASE_URL` 拼接远程云图地址。需要更换云图域名时，修改 `.env.local`：
-
-```env
-VITE_CLOUD_IMAGE_BASE_URL=https://your-image-domain.example.com/image
-```
-
-上传本地 `image/` 目录到对象存储时，可使用：
-
-```bash
-node scripts/upload-r2-images.mjs --root image --prefix image
-```
-
-该脚本需要提前配置 `AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`R2_ACCOUNT_ID`、`R2_BUCKET` 等环境变量。
-
-### 3. 更新团队信息
+### 1. 更新团队信息
 
 直接修改：
 
@@ -149,7 +90,7 @@ src/data/team.json
 
 页面会按当前语言自动读取对应的中英文内容。
 
-### 4. 更新论文成果
+### 2. 更新论文成果
 
 将 PDF 文件放入：
 

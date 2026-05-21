@@ -25,9 +25,10 @@ import { Language } from '../types';
 import teamData from '../data/team.json';
 import { PUBLICATION_PAPERS } from '../utils/publicationPapers';
 
+// 论文列表由工具模块从 src/papers 自动解析，页面只负责展示和下载入口。
 const DYNAMIC_PAPERS = PUBLICATION_PAPERS;
 
-// --- 共享布局组件 ---
+// 共享页面骨架统一实验室子页面的标题区、滚动容器和入场动画。
 const PageLayout: React.FC<{ children: React.ReactNode; title: string; subtitle: string }> = ({ children, title, subtitle }) => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
@@ -46,7 +47,7 @@ const PageLayout: React.FC<{ children: React.ReactNode; title: string; subtitle:
   </motion.div>
 );
 
-// --- 子组件：动画统计卡片 ---
+// 统计卡片用于概况页的关键数字展示，悬停动效只承担轻量反馈。
 const StatCard: React.FC<{ icon: any; label: string; val: string; sub: string; delay: number }> = ({ icon: Icon, label, val, sub, delay }) => {
   return (
     <motion.div
@@ -79,7 +80,7 @@ const StatCard: React.FC<{ icon: any; label: string; val: string; sub: string; d
   );
 };
 
-// --- 子组件：MeteoCore 抽象艺术图形 ---
+// MeteoCore 是概况页的视觉主图，用抽象动效表达气象智能计算主题。
 const MeteoCore = () => {
   return (
     <motion.div
@@ -149,7 +150,7 @@ const MeteoCore = () => {
   );
 };
 
-// --- 1. 实验室概况页面 ---
+// 实验室概况页组合团队介绍、统计卡片和视觉主图，承担首页式信息概览。
 export const LabOverview: React.FC<{ language: Language }> = ({ language }) => {
   return (
     <PageLayout
@@ -201,7 +202,7 @@ export const LabOverview: React.FC<{ language: Language }> = ({ language }) => {
   );
 };
 
-// --- 2. 实验室团队页面 ---
+// 实验室团队页从 team.json 读取中英文团队数据，避免成员信息硬编码在 JSX 中。
 export const LabTeam: React.FC<{ language: Language }> = ({ language }) => {
   const LEADER = {
     name: teamData.leader.name[language],
@@ -269,7 +270,7 @@ export const LabTeam: React.FC<{ language: Language }> = ({ language }) => {
         ))}
       </div>
 
-      {/* 联系我们部分 */}
+      {/* 联系方式当前保留占位符，后续补充真实地址、电话和邮箱时只需替换文本。 */}
       <div className="mt-16">
         <h3 className="text-3xl font-extrabold text-slate-900 mb-8 flex items-center gap-3">
           <span className="w-1.5 h-8 bg-blue-600 rounded-full" />
@@ -343,7 +344,7 @@ export const LabTeam: React.FC<{ language: Language }> = ({ language }) => {
   );
 };
 
-// --- 3. 实验室研究方向页面 ---
+// 研究方向页使用本地数组维护四个展示卡片，方便后续按团队方向增删条目。
 export const LabResearch: React.FC<{ language: Language }> = ({ language }) => {
   const AREAS = [
     {
@@ -410,7 +411,7 @@ export const LabResearch: React.FC<{ language: Language }> = ({ language }) => {
   );
 };
 
-// --- 4. 实验室学术成果页面 ---
+// 学术成果页展示自动解析出的论文元数据，并提供在线打开与下载入口。
 export const LabPublications: React.FC<{ language: Language }> = ({ language }) => {
   return (
     <PageLayout
@@ -442,7 +443,7 @@ export const LabPublications: React.FC<{ language: Language }> = ({ language }) 
               </a>
               <a
                 href={paper.url}
-                download={`${paper.title}.pdf`}
+                download={paper.downloadName}
                 className="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all text-sm font-bold"
               >
                 <Download size={16} />
@@ -455,5 +456,3 @@ export const LabPublications: React.FC<{ language: Language }> = ({ language }) 
     </PageLayout>
   );
 };
-
-// LabPages.tsx 结束

@@ -23,37 +23,59 @@ for (let index = 2; index < process.argv.length; index += 1) {
   }
 }
 
-const requiredEnv = [
-  'AWS_ACCESS_KEY_ID',
-  'AWS_SECRET_ACCESS_KEY',
-  'R2_ACCOUNT_ID',
-  'R2_BUCKET',
-];
-
-for (const name of requiredEnv) {
-  if (!process.env[name]) {
-    console.error(`Missing required environment variable: ${name}`);
-    process.exit(1);
-  }
-}
-
-const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-const accountId = process.env.R2_ACCOUNT_ID;
-const bucket = process.env.R2_BUCKET;
-const rootDir = path.resolve(args.get('root') || 'image');
-const objectPrefix = normalizeObjectPrefix(args.get('prefix') || 'image');
-const concurrency = Math.max(1, Number.parseInt(args.get('concurrency') || '3', 10));
-const cacheControl = args.get('cache-control') || DEFAULT_CACHE_CONTROL;
-const signedPayload = args.has('signed-payload');
-const skipExisting = !args.has('no-skip');
-const limit = args.has('limit') ? Math.max(1, Number.parseInt(args.get('limit'), 10)) : null;
-
 function normalizeObjectPrefix(value) {
   return String(value || '')
     .replace(/\\/g, '/')
     .replace(/^\/+|\/+$/g, '');
 }
+
+function normalizeEndpoint(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/+$/, '');
+}
+
+function requireEnv(names) {
+  for (const name of names) {
+    if (!process.env[name]) {
+      console.error(`Missing required environment variable: ${name}`);
+      process.exit(1);
+    }
+  }
+}
+
+function resolveStorageConfig() {
+  requireEnv(['COS_SECRET_ID', 'COS_SECRET_KEY', 'COS_BUCKET', 'COS_REGION']);
+
+  const bucket = process.env.COS_BUCKET;
+  const region = process.env.COS_REGION;
+  const host = normalizeEndpoint(process.env.COS_ENDPOINT)
+    || `${bucket}.cos.${region}.myqcloud.com`;
+
+  return {
+    displayName: 'Tencent COS',
+    accessKeyId: process.env.COS_SECRET_ID,
+    secretAccessKey: process.env.COS_SECRET_KEY,
+    bucket,
+    host,
+    region,
+    service: 's3',
+    canonicalUriFor: objectKey => `/${encodeObjectPath(objectKey)}`,
+  };
+}
+
+const storage = resolveStorageConfig();
+const rootDir = path.resolve(args.get('root') || 'image');
+
+// 该前缀要与 VITE_CLOUD_IMAGE_BASE_URL 后面的公开路径保持一致。
+// 默认 image/zpf/... 对应 README 中的云图目录结构。
+const objectPrefix = normalizeObjectPrefix(args.get('prefix') || 'image');
+const concurrency = Math.max(1, Number.parseInt(args.get('concurrency') || '3', 10));
+const cacheControl = args.get('cache-control') || DEFAULT_CACHE_CONTROL;
+const signedPayload = !args.has('unsigned-payload');
+const skipExisting = !args.has('no-skip');
+const limit = args.has('limit') ? Math.max(1, Number.parseInt(args.get('limit'), 10)) : null;
 
 function toAmzDate(date) {
   return date.toISOString().replace(/[:-]|\.\d{3}/g, '');
@@ -96,13 +118,10 @@ function buildSignedHeaders({ method, objectKey, headers: inputHeaders = {}, pay
   const now = new Date();
   const amzDate = toAmzDate(now);
   const dateStamp = amzDate.slice(0, 8);
-  const region = 'auto';
-  const service = 's3';
-  const host = `${accountId}.r2.cloudflarestorage.com`;
-  const canonicalUri = `/${bucket}/${encodeObjectPath(objectKey)}`;
+  const canonicalUri = storage.canonicalUriFor(objectKey);
 
   const headers = {
-    host,
+    host: storage.host,
     'x-amz-content-sha256': payloadHash,
     'x-amz-date': amzDate,
     ...Object.fromEntries(
@@ -124,7 +143,7 @@ function buildSignedHeaders({ method, objectKey, headers: inputHeaders = {}, pay
     payloadHash,
   ].join('\n');
 
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const credentialScope = `${dateStamp}/${storage.region}/${storage.service}/aws4_request`;
   const stringToSign = [
     'AWS4-HMAC-SHA256',
     amzDate,
@@ -132,17 +151,22 @@ function buildSignedHeaders({ method, objectKey, headers: inputHeaders = {}, pay
     hash(canonicalRequest),
   ].join('\n');
 
-  const signingKey = getSigningKey(secretAccessKey, dateStamp, region, service);
+  const signingKey = getSigningKey(
+    storage.secretAccessKey,
+    dateStamp,
+    storage.region,
+    storage.service
+  );
   const signature = hmac(signingKey, stringToSign, 'hex');
 
   return {
     requestPath: canonicalUri,
     headers: Object.fromEntries([
       ...Object.entries(inputHeaders),
-      ['Host', host],
+      ['Host', storage.host],
       ['X-Amz-Content-Sha256', payloadHash],
       ['X-Amz-Date', amzDate],
-      ['Authorization', `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`],
+      ['Authorization', `AWS4-HMAC-SHA256 Credential=${storage.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`],
     ]),
   };
 }
@@ -201,7 +225,7 @@ async function uploadFile(filePath) {
   await new Promise((resolve, reject) => {
     const request = https.request({
       method: 'PUT',
-      hostname: `${accountId}.r2.cloudflarestorage.com`,
+      hostname: storage.host,
       path: requestPath,
       headers,
     }, response => {
@@ -215,7 +239,8 @@ async function uploadFile(filePath) {
           resolve();
           return;
         }
-        reject(new Error(`R2 upload failed with HTTP ${response.statusCode}: ${body.slice(0, 500)}`));
+
+        reject(new Error(`${storage.displayName} upload failed with HTTP ${response.statusCode}: ${body.slice(0, 500)}`));
       });
     });
 
@@ -236,7 +261,7 @@ async function objectExistsWithSize(objectKey, expectedSize) {
   return await new Promise((resolve, reject) => {
     const request = https.request({
       method: 'HEAD',
-      hostname: `${accountId}.r2.cloudflarestorage.com`,
+      hostname: storage.host,
       path: requestPath,
       headers,
     }, response => {
@@ -252,7 +277,7 @@ async function objectExistsWithSize(objectKey, expectedSize) {
           return;
         }
 
-        reject(new Error(`R2 HEAD failed with HTTP ${response.statusCode}`));
+        reject(new Error(`${storage.displayName} HEAD failed with HTTP ${response.statusCode}`));
       });
     });
 
@@ -289,7 +314,9 @@ async function main() {
   let nextIndex = 0;
 
   console.log(`Uploading ${files.length} files from ${rootDir}`);
-  console.log(`Target bucket: ${bucket}, prefix: ${objectPrefix || '(root)'}`);
+  console.log(`Target storage: ${storage.displayName}`);
+  console.log(`Target bucket: ${storage.bucket}, prefix: ${objectPrefix || '(root)'}`);
+  console.log(`Target host: ${storage.host}`);
 
   async function worker() {
     while (nextIndex < files.length) {

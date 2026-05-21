@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   ReferenceLine,
   Legend
 } from 'recharts';
@@ -21,6 +20,8 @@ interface MetricsChartProps {
 }
 
 const MAX_X_TICKS = 4;
+const CHART_WIDTH = 320;
+const CHART_HEIGHT = 160;
 
 interface TimeMeta {
   dayKey: string;
@@ -28,7 +29,7 @@ interface TimeMeta {
 }
 
 const parseTimeMeta = (time: string, index: number): TimeMeta => {
-  // e.g. 2015-08-15 06:00 or 08-15 06:00
+  // 优先解析标准时间，例如 2015-08-15 06:00 或 08-15 06:00。
   const dateWithTimeMatch = time.match(/(?:\d{4}-)?(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
   if (dateWithTimeMatch) {
     const [, month, day, hour] = dateWithTimeMatch;
@@ -48,7 +49,7 @@ const parseTimeMeta = (time: string, index: number): TimeMeta => {
     };
   }
 
-  // e.g. 27:00 (cumulative hour timeline)
+  // 兼容累计小时格式，例如 27:00 表示第 2 天 03:00。
   if (hourMatch) {
     const hour = Number(hourMatch[1]);
     const day = Math.floor(hour / 24) + 1;
@@ -58,7 +59,7 @@ const parseTimeMeta = (time: string, index: number): TimeMeta => {
     };
   }
 
-  // Fallback: assume 3-hour interval and 8 points per day
+  // 最后按 3 小时间隔兜底，保证非标准时间字符串仍能生成日期刻度。
   return {
     dayKey: `D${Math.floor(index / 8) + 1}`,
     hour: (index * 3) % 24,
@@ -83,6 +84,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
 
+  // X 轴按“天”抽样，而不是直接显示所有时间点，避免右侧窄面板标签拥挤。
   const xAxisTickConfig = useMemo(() => {
     if (!data.length) {
       return {
@@ -116,7 +118,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
           return null;
         }
 
-        // 统一使用接近起始小时的点作为该天代表，保证日期间隔观感一致
+        // 每天选接近起始小时的点作为代表，让不同日期之间的视觉间隔更稳定。
         return candidateIndices.reduce((bestIdx, idx) => {
           const bestDelta = Math.abs(parseTimeMeta(data[bestIdx].time, bestIdx).hour - anchorHour);
           const currentDelta = Math.abs(parseTimeMeta(data[idx].time, idx).hour - anchorHour);
@@ -138,6 +140,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
     };
   }, [data, language]);
 
+  // 三张图共享同一套坐标轴和提示框配置，保证对比阅读方式一致。
   const commonChartProps = {
     data: data,
     margin: { top: 5, right: 10, left: 0, bottom: 0 },
@@ -169,12 +172,11 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
 
   return (
     <div className="flex flex-col gap-6 select-none">
-      {/* 图表 1：风速 */}
+      {/* 风速图对比传统估计和 IDOL 模型输出，参考线标记当前时间点。 */}
       <div className="flex flex-col">
         <h4 className="text-[11px] font-semibold text-slate-500 mb-2 pl-1">{t('wind_speed')}</h4>
-        <div className="h-[160px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart {...commonChartProps}>
+        <div className="h-[160px] w-full overflow-hidden">
+          <LineChart width={CHART_WIDTH} height={CHART_HEIGHT} {...commonChartProps}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis {...commonXAxisProps} />
               <YAxis {...commonYAxisProps} domain={['auto', 'auto']} />
@@ -200,17 +202,15 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
               />
-            </LineChart>
-          </ResponsiveContainer>
+          </LineChart>
         </div>
       </div>
 
-      {/* 图表 2：气压 */}
+      {/* 气压图使用同一时间轴，便于和风速变化同步观察。 */}
       <div className="flex flex-col border-t border-slate-100 pt-4">
         <h4 className="text-[11px] font-semibold text-slate-500 mb-2 pl-1">{t('pressure')}</h4>
-        <div className="h-[160px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart {...commonChartProps}>
+        <div className="h-[160px] w-full overflow-hidden">
+          <LineChart width={CHART_WIDTH} height={CHART_HEIGHT} {...commonChartProps}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis {...commonXAxisProps} />
               <YAxis {...commonYAxisProps} domain={['auto', 'auto']} />
@@ -236,17 +236,15 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
                 activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
               />
-            </LineChart>
-          </ResponsiveContainer>
+          </LineChart>
         </div>
       </div>
 
-      {/* 图表 3：半径 */}
+      {/* 半径图同时展示 RMW 与 R34，突出内外风圈结构的模型差异。 */}
       <div className="flex flex-col border-t border-slate-100 pt-4">
         <h4 className="text-[11px] font-semibold text-slate-500 mb-2 pl-1">{t('wind_radii')}</h4>
-        <div className="h-[160px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart {...commonChartProps}>
+        <div className="h-[160px] w-full overflow-hidden">
+          <LineChart width={CHART_WIDTH} height={CHART_HEIGHT} {...commonChartProps}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis {...commonXAxisProps} />
               <YAxis {...commonYAxisProps} domain={[0, 'auto']} />
@@ -254,7 +252,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
               <ReferenceLine x={currentPoint?.time} stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" />
               <Legend iconType="plainline" wrapperStyle={{ fontSize: '10px', marginTop: '-5px' }} />
 
-              {/* RMW */}
+              {/* RMW：最大风速半径，对应地图上的内风圈。 */}
               <Line
                 name={`${t('traditional_method')} (${t('rmw_short')})`}
                 type="monotone"
@@ -273,7 +271,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 dot={false}
               />
 
-              {/* R34 */}
+              {/* R34：34 kt 风圈半径，对应地图上的外风圈。 */}
               <Line
                 name={`${t('traditional_method')} (${t('r34_short')})`}
                 type="monotone"
@@ -291,8 +289,7 @@ export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, 
                 strokeDasharray="4 4"
                 dot={false}
               />
-            </LineChart>
-          </ResponsiveContainer>
+          </LineChart>
         </div>
       </div>
     </div>

@@ -20,11 +20,12 @@ import { TRANSLATIONS } from '../constants';
 interface SidebarProps {
   language: Language;
   onLanguageToggle: () => void;
-  onNavigate: (view: ViewType) => void; // 通用导航处理函数
+  onNavigate: (view: ViewType) => void;
   currentView: ViewType;
   onCollapse: () => void; 
 }
 
+// 一级导航项负责展开分组和激活态展示，具体路由仍由父组件控制。
 const NavItem: React.FC<{
   icon: React.ElementType;
   label: string;
@@ -63,6 +64,7 @@ const NavItem: React.FC<{
   );
 };
 
+// 二级导航项保持轻量，只接收标签、图标和点击回调，避免侧边栏承担页面逻辑。
 const SubItem: React.FC<{
   label: string;
   icon?: React.ElementType;
@@ -93,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
   const t = (key: string) => TRANSLATIONS[key][language];
 
   return (
-    // 固定宽度 240px，严格匹配父元素 motion.aside 的宽度
+    // 固定 240px 宽度，与 App.tsx 中的 motion.aside 动画宽度保持一致。
     <div className="h-full w-[240px] min-w-[240px] border-r border-slate-200 bg-white flex flex-col z-20 relative">
       <div className="p-4 border-b border-slate-100 flex items-start justify-between gap-2">
         <div>
@@ -101,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
           <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mt-0.5">AI METEOROLOGY</p>
         </div>
         
-        {/* 折叠按钮 */}
+        {/* 折叠按钮只关闭侧栏，不改变当前页面或台风播放状态。 */}
         <button 
           onClick={onCollapse}
           className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors -mt-1 -mr-1 shrink-0"
@@ -113,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
 
       <div className="flex-1 overflow-y-auto p-4 space-y-1">
         
-        {/* 模块 1：实验室信息 */}
+        {/* 实验室信息分组承载静态内容页面入口。 */}
         <NavItem 
           icon={Building2} 
           label={t('lab_details')} 
@@ -146,7 +148,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
           />
         </NavItem>
         
-        {/* 模块 2：台风强度评估 */}
+        {/* 台风强度评估分组承载地图可视化入口。 */}
         <NavItem 
           icon={Wind} 
           label={t('typhoon_estimation')} 
@@ -154,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ language, onLanguageToggle, on
           onToggle={() => toggleExpand('estimation')}
         >
           <SubItem 
-             // 使用一个简单的圆点作为活动可视化器的指示器
+             // 自定义圆点图标用于强调当前可视化页面的激活状态。
              icon={() => <div className={`w-1.5 h-1.5 rounded-full ml-1 mr-0.5 ${currentView === 'map' ? 'bg-blue-600' : 'bg-slate-300'}`} />}
              label={t('idol_viz')}
              onClick={() => onNavigate('map')}

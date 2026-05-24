@@ -30,11 +30,51 @@ export interface TyphoonCase {
 export type Language = 'en' | 'zh';
 
 // 用于管理主视图状态的新类型
-export type ViewType = 'map' | 'lab_overview' | 'lab_team' | 'lab_research' | 'lab_publications';
+export type ViewType = 'map' | 'cloudseer'| 'lab_overview' | 'lab_team' | 'lab_research' | 'lab_publications';
 
 export interface Translations {
   [key: string]: {
     en: string;
     zh: string;
   };
+}
+
+
+// --- CloudSeer 相关类型定义 ---
+export interface CloudSeerBand {
+  id: string;
+  wavelength: string;
+  nameEn: string;
+  nameZh: string;
+  unit: string;
+}
+
+export interface CloudSeerModel {
+  id: string;
+  nameEn: string;
+  nameZh: string;
+  isOurs?: boolean;
+}
+
+export interface CloudSeerPoint {
+  time: string;
+  // 8个波段的云图数据 [height, width, bands]
+  cloudData: number[][][];
+  // ADCMP 位移场 [height, width, 2] (dx, dy)
+  displacementField: number[][][];
+  // 评估指标
+  metrics: {
+    mse: number;
+    mae: number;
+    psnr: number;
+    ssim: number;
+  };
+}
+
+export interface CloudSeerCase {
+  id: string;
+  nameEn: string;
+  nameZh: string;
+  type: 'typhoon' | 'convection' | 'front';
+  data: CloudSeerPoint[];
 }

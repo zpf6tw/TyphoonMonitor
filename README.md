@@ -1,4 +1,4 @@
-# AI Meteorology
+# AI Meteorolog
 
 **在线域名:** [aimeteorology.cn](http://www.aimeteorology.cn)
 

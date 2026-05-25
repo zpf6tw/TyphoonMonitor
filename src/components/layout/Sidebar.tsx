@@ -14,8 +14,8 @@ import {
   Microscope,
   LayoutDashboard
 } from 'lucide-react';
-import { Language, ViewType } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { Language, ViewType } from '../../types';
+import { TRANSLATIONS } from '../../constants';
 
 interface SidebarProps {
   language: Language;

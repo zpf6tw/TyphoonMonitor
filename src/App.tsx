@@ -1,18 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PanelLeftOpen, PanelRightOpen, Activity, Wind, Zap, PanelRightClose } from 'lucide-react';
-import { Sidebar } from './components/Sidebar';
-import { TyphoonMap } from './components/TyphoonMap';
-import { LabOverview, LabPublications, LabResearch, LabTeam } from './components/LabPages';
-import { TyphoonAnalysisPanel, TyphoonAnalysisPanelKey, TyphoonAnalysisPanelState } from './components/typhoon/TyphoonAnalysisPanel';
-import { TyphoonOverlayControls } from './components/typhoon/TyphoonOverlayControls';
-import { TyphoonTimelineControls } from './components/typhoon/TyphoonTimelineControls';
-import { CloudSeerView } from './components/cloudseer/CloudSeerView';
-import { CloudSeerMetrics } from './components/cloudseer/CloudSeerMetrics';
-import { MotionVectorField } from './components/cloudseer/MotionVectorField';
-import { ModelPrinciplePanel } from './components/cloudseer/ModelPrinciplePanel';
+import { Sidebar } from './components/layout';
+import { LabOverview, LabPublications, LabResearch, LabTeam } from './components/lab';
+import {
+  TyphoonAnalysisPanel,
+  TyphoonMap,
+  TyphoonOverlayControls,
+  TyphoonTimelineControls,
+} from './components/typhoon-intensity';
+import type {
+  TyphoonAnalysisPanelKey,
+  TyphoonAnalysisPanelState,
+} from './components/typhoon-intensity';
+import {
+  CloudSeerMetrics,
+  CloudSeerView,
+  ModelPrinciplePanel,
+  MotionVectorField,
+} from './components/cloud-evolution';
 import { CLOUDSEER_CASES, CLOUDSEER_BANDS } from './utils/dataGenerator';
-import { CollapsiblePanel } from './components/common/CollapsiblePanel';
+import { CollapsiblePanel } from './components/common';
 import {
   CASE_SELECTOR_OPTIONS,
   DUAL_TYPHOON_STORM_CODES,

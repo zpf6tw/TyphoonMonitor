@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   LineChart,
   Line,
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { CloudSeerPoint, Language } from '../../types';
 import { TRANSLATIONS } from '../../constants';
+import metricsData from '../../data/metrics.json';
 const BAND_IDS = ['0.64', '1.6', '3.9', '8.6', '10.4', '11.2', '12.3', '13.3'];
 
 interface CloudSeerMetricsProps {
@@ -35,17 +36,10 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
   selectedBandId,
 }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
-  const [metrics, setMetrics] = useState<MetricsData | null>(null);
-
-  useEffect(() => {
-    fetch('/metrics.json')
-      .then((res) => res.json())
-      .then(setMetrics)
-      .catch((err) => console.error('Failed to load metrics:', err));
-  }, []);
+  const metrics = metricsData as MetricsData;
 
   const bandIndex = BAND_IDS.indexOf(selectedBandId);
-  const isLoading = !metrics || bandIndex === -1;
+  const isLoading = bandIndex === -1;
   const isPastFrame = currentIndex <= 5;
   const predStep = currentIndex - 6; // 0~5
 
@@ -231,9 +225,8 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
       {/* 当前指标数值卡片 */}
       <div className="grid grid-cols-2 gap-3 pt-2">
         <div
-          className={`p-3 rounded-xl border transition-all ${
-            isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
-          }`}
+          className={`p-3 rounded-xl border transition-all ${isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
+            }`}
         >
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">{t('mse')}</p>
           {isPastFrame || currentMetrics.mse === null ? (
@@ -244,9 +237,8 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
         </div>
 
         <div
-          className={`p-3 rounded-xl border transition-all ${
-            isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
-          }`}
+          className={`p-3 rounded-xl border transition-all ${isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
+            }`}
         >
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">{t('mae')}</p>
           {isPastFrame || currentMetrics.mae === null ? (
@@ -257,9 +249,8 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
         </div>
 
         <div
-          className={`p-3 rounded-xl border transition-all ${
-            isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
-          }`}
+          className={`p-3 rounded-xl border transition-all ${isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
+            }`}
         >
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">{t('psnr')}</p>
           {isPastFrame || currentMetrics.psnr === null ? (
@@ -272,9 +263,8 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
         </div>
 
         <div
-          className={`p-3 rounded-xl border transition-all ${
-            isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
-          }`}
+          className={`p-3 rounded-xl border transition-all ${isPastFrame ? 'bg-slate-50 border-slate-200' : 'bg-slate-50 border-slate-100'
+            }`}
         >
           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">{t('ssim')}</p>
           {isPastFrame || currentMetrics.ssim === null ? (

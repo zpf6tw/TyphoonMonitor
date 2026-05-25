@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PanelRightClose, Settings2, Zap } from 'lucide-react';
 import { Language, TyphoonCase, TyphoonPoint } from '../../types';
 import { getStormCodeKey, getTyphoonIntro } from '../../features/typhoon/caseCatalog';
-import { MetricsChart } from '../MetricsChart';
+import { TyphoonMetricsChart } from './TyphoonMetricsChart';
 import { CollapsiblePanel } from '../common/CollapsiblePanel';
 
 export interface TyphoonAnalysisPanelState {
@@ -187,7 +187,7 @@ export const TyphoonAnalysisPanel: React.FC<TyphoonAnalysisPanelProps> = ({
             />
           )}
           {isChartReady && (
-            <MetricsChart data={timelineData} currentIndex={currentIndex} language={language} />
+            <TyphoonMetricsChart data={timelineData} currentIndex={currentIndex} language={language} />
           )}
         </CollapsiblePanel>
 

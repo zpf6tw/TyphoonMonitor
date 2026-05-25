@@ -21,9 +21,9 @@ import {
   Download,
   ExternalLink
 } from 'lucide-react';
-import { Language } from '../types';
-import teamData from '../data/team.json';
-import { PUBLICATION_PAPERS } from '../utils/publicationPapers';
+import { Language } from '../../types';
+import teamData from '../../data/team.json';
+import { PUBLICATION_PAPERS } from '../../utils/publicationPapers';
 
 // 论文列表由工具模块从 src/papers 自动解析，页面只负责展示和下载入口。
 const DYNAMIC_PAPERS = PUBLICATION_PAPERS;

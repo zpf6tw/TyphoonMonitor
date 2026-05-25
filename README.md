@@ -31,18 +31,33 @@ TyphoonMonitor/
 ├─ src/
 │  ├─ components/
 │  │  ├─ common/
-│  │  │  └─ CollapsiblePanel.tsx  # 通用折叠面板
-│  │  ├─ typhoon/
+│  │  │  ├─ CollapsiblePanel.tsx          # 通用折叠面板
+│  │  │  └─ index.ts                      # 通用组件导出入口
+│  │  ├─ layout/
+│  │  │  ├─ Sidebar.tsx                   # 侧边栏导航与语言切换
+│  │  │  └─ index.ts                      # 布局组件导出入口
+│  │  ├─ lab/
+│  │  │  ├─ LabPages.tsx                  # 实验室概况、团队、研究方向、论文页面
+│  │  │  └─ index.ts                      # 实验室页面导出入口
+│  │  ├─ typhoon-intensity/               # 台风强度评估模块
 │  │  │  ├─ CaseSelectorDropdown.tsx      # 台风案例选择下拉框
 │  │  │  ├─ CloudTemperatureLegend.tsx    # 云图亮温色标图例
 │  │  │  ├─ TyphoonAnalysisPanel.tsx      # 右侧特征、指标图表和物理先验面板
+│  │  │  ├─ TyphoonMap.tsx                # 台风地图、路径、云图叠加层
+│  │  │  ├─ TyphoonMetricsChart.tsx       # 台风强度、气压和风圈指标图表
 │  │  │  ├─ TyphoonOverlayControls.tsx    # 地图顶部场次选择和实时参数浮层
-│  │  │  └─ TyphoonTimelineControls.tsx   # 底部播放、云图模式和时间轴控制
-│  │  ├─ LabPages.tsx             # 实验室概况、团队、研究方向、论文页面
-│  │  ├─ MetricsChart.tsx         # 指标对比图表
-│  │  ├─ Sidebar.tsx              # 侧边栏导航与语言切换
-│  │  └─ TyphoonMap.tsx           # 台风地图、路径、云图叠加层
+│  │  │  ├─ TyphoonTimelineControls.tsx   # 底部播放、云图模式和时间轴控制
+│  │  │  └─ index.ts                      # 台风强度评估组件导出入口
+│  │  └─ cloud-evolution/                 # 云系演变预测模块
+│  │     ├─ CloudSeerMap.tsx              # CloudSeer 云图地图渲染
+│  │     ├─ CloudSeerMetrics.tsx          # 云系预测误差指标图表
+│  │     ├─ CloudSeerView.tsx             # 云系演变预测主视图
+│  │     ├─ ComparisonSlider.tsx          # 预测与实况对比滑块
+│  │     ├─ ModelPrinciplePanel.tsx       # CloudSeer 模型原理说明面板
+│  │     ├─ MotionVectorField.tsx         # 云系运动矢量场
+│  │     └─ index.ts                      # 云系演变预测组件导出入口
 │  ├─ data/
+│  │  ├─ metrics.json             # CloudSeer 预测误差指标数据
 │  │  ├─ team.json                # 团队成员数据
 │  │  └─ typhoonData.json         # 台风案例与时间序列数据
 │  ├─ features/
@@ -75,6 +90,14 @@ TyphoonMonitor/
 └─ vite.config.ts                 # Vite 配置
 ```
 
+## 组件组织约定
+
+- `src/components/typhoon-intensity/`：台风强度评估相关组件，文件名统一使用 `Typhoon*` 前缀，内部通过 `index.ts` 对外导出。
+- `src/components/cloud-evolution/`：云系演变预测相关组件，保留 CloudSeer 产品名作为组件前缀，内部通过 `index.ts` 对外导出。
+- `src/components/common/`：跨模块复用组件。
+- `src/components/layout/`：应用布局和导航组件。
+- `src/components/lab/`：实验室静态内容页面。
+
 ## 数据更新方法
 
 ### 1. 更新团队信息
@@ -90,7 +113,17 @@ src/data/team.json
 
 页面会按当前语言自动读取对应的中英文内容。
 
-### 2. 更新论文成果
+### 2. 更新 CloudSeer 指标数据
+
+直接修改：
+
+```text
+src/data/metrics.json
+```
+
+`CloudSeerMetrics.tsx` 会通过静态导入读取该文件；不要再把同名文件放在 `public/` 下，否则会造成数据来源混乱。
+
+### 3. 更新论文成果
 
 将 PDF 文件放入：
 

@@ -54,5 +54,40 @@ export const TRANSLATIONS: Translations = {
   analysis_dashboard: { en: "Analysis Dashboard", zh: "分析控制台" },
   prev_page: { en: "Previous", zh: "上一页" },
   next_page: { en: "Next", zh: "下一页" },
-  page_info: { en: "Page {current} of {total}", zh: "第 {current} 页，共 {total} 页" }
+  page_info: { en: "Page {current} of {total}", zh: "第 {current} 页，共 {total} 页" },
+
+
+
+  // --- CloudSeer 新增词条 ---
+  cloudseer_scene: { en: "Cloud Scene Selection", zh: "云系场景选择" },
+  typhoon_cloud: { en: "Typhoon Cloud System", zh: "台风云系" },
+  convection_cloud: { en: "Severe Convection", zh: "强对流云系" },
+  front_cloud: { en: "Frontal Cloud System", zh: "锋面云系" },
+  cloud_timeline: { en: "Nowcasting Timeline (6h Window)", zh: "预报时间轴 (6小时)" },
+  past_input: { en: "Past 3h (Input)", zh: "过去3小时 (输入)" },
+  future_pred: { en: "Future 3h (Prediction)", zh: "未来3小时 (预报)" },
+  band_selection: { en: "Spectral Band", zh: "光谱波段" },
+  model_comparison_cloud: { en: "Model Comparison", zh: "模型对比" },
+  motion_vector_field: { en: "Atmospheric Motion Field", zh: "大气运动矢量场" },
+  adcmp_branch: { en: "ADCMP Branch", zh: "ADCMP 分支" },
+  fgtp_branch: { en: "FGTP Branch", zh: "FGTP 分支" },
+  gate_fusion: { en: "Gate Fusion", zh: "门控融合" },
+  physics_constraints: { en: "Atmospheric Dynamics Constraints", zh: "大气动力学约束" },
+  advection: { en: "Advection Consistency", zh: "平流一致性" },
+  shear_stretch: { en: "Shear-Stretch Balance", zh: "剪切-拉伸平衡" },
+  vorticity: { en: "Vorticity Control", zh: "涡度控制" },
+  cloudseer_metrics: { en: "Nowcasting Metrics", zh: "预报精度指标" },
+  mse: { en: "MSE", zh: "均方误差" },
+  mae: { en: "MAE", zh: "平均绝对误差" },
+  psnr: { en: "PSNR (dB)", zh: "峰值信噪比" },
+  ssim: { en: "SSIM", zh: "结构相似性" },
+  cloudseer_arch: { en: "CloudSeer Architecture", zh: "CloudSeer 架构" },
+  motion_texture_decouple: { en: "Motion-Texture Decoupling", zh: "运动-纹理解耦" },
+  gt_cloud: { en: "Ground Truth", zh: "真实云图" },
+  cloudseer_pred: { en: "CloudSeer Prediction", zh: "CloudSeer 预报" },
+
+
+
+
+
 };

@@ -10,10 +10,10 @@ import {
   ReferenceLine,
   Legend
 } from 'recharts';
-import { TyphoonPoint, Language } from '../types';
-import { TRANSLATIONS } from '../constants';
+import { TyphoonPoint, Language } from '../../types';
+import { TRANSLATIONS } from '../../constants';
 
-interface MetricsChartProps {
+interface TyphoonMetricsChartProps {
   data: TyphoonPoint[];
   currentIndex: number;
   language: Language;
@@ -80,7 +80,7 @@ const formatDayLabel = (bucket: string, language: Language): string => {
   return language === 'zh' ? `${Number(day)}日` : day;
 };
 
-export const MetricsChart: React.FC<MetricsChartProps> = ({ data, currentIndex, language }) => {
+export const TyphoonMetricsChart: React.FC<TyphoonMetricsChartProps> = ({ data, currentIndex, language }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
 

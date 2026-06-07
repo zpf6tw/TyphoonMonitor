@@ -1,7 +1,7 @@
 import React from 'react';
 import { Target } from 'lucide-react';
-import { Language, TyphoonPoint } from '../../types';
-import { CaseSelectorOption } from '../../features/typhoon/caseCatalog';
+import { Language, TyphoonPoint } from '../../../types';
+import { CaseSelectorOption } from '../../../features/typhoon/caseCatalog';
 import { CaseSelectorDropdown } from './CaseSelectorDropdown';
 
 interface TyphoonOverlayControlsProps {

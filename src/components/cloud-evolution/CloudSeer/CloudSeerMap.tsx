@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, ImageOverlay, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { CloudSeerPoint, CloudSeerBand, Language } from '../../types';
-import { TRANSLATIONS } from '../../constants';
+import { CloudSeerPoint, CloudSeerBand, Language } from '../../../types';
+import { TRANSLATIONS } from '../../../constants';
 
 // 修复 Leaflet 默认标记图标
 delete (L.Icon.Default.prototype as any)._getIconUrl;

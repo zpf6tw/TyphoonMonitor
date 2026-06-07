@@ -1,6 +1,6 @@
 import React from 'react';
-import { Language } from '../../types';
-import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../../utils/cloudFrames';
+import { Language } from '../../../types';
+import { CLOUD_IMAGE_MODE_LABELS, CloudImageMode } from '../../../utils/cloudFrames';
 
 interface CloudLegendStop {
   color: string;

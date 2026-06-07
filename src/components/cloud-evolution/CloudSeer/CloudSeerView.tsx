@@ -14,9 +14,9 @@ import {
   ChevronDown,
   Droplet // 新增透明度图标
 } from 'lucide-react';
-import { Language, ViewType, CloudSeerCase, CloudSeerBand, CloudSeerModel } from '../../types';
-import { TRANSLATIONS } from '../../constants';
-import { CLOUDSEER_CASES, CLOUDSEER_BANDS, CLOUDSEER_MODELS } from '../../utils/dataGenerator';
+import { Language, ViewType, CloudSeerCase, CloudSeerBand, CloudSeerModel } from '../../../types';
+import { TRANSLATIONS } from '../../../constants';
+import { CLOUDSEER_CASES, CLOUDSEER_BANDS, CLOUDSEER_MODELS } from '../../../utils/dataGenerator';
 import { CloudSeerMap } from './CloudSeerMap';
 
 // 可折叠面板组件（保持不变）

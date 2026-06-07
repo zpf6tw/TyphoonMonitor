@@ -2,8 +2,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, Circle, useMap, ImageOverlay } from 'react-leaflet';
 import L from 'leaflet';
-import { Language, TyphoonPoint } from '../../types';
-import { CloudImageMode } from '../../utils/cloudFrames';
+import { Language, TyphoonPoint } from '../../../types';
+import { CloudImageMode } from '../../../utils/cloudFrames';
 import {
   CLOUD_FAR_PRELOAD_COUNT_IDLE,
   CLOUD_FAR_PRELOAD_COUNT_PLAYING,
@@ -11,7 +11,7 @@ import {
   isCloudImageDecoded,
   isCloudImageLoaded,
   preloadCloudImage,
-} from '../../utils/cloudImagePreloader';
+} from '../../../utils/cloudImagePreloader';
 import { CloudTemperatureLegend } from './CloudTemperatureLegend';
 
 // Leaflet 默认图标在 Vite 打包后路径可能丢失，因此显式指定 CDN 资源。

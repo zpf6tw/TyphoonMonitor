@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { PanelRightClose, Settings2, Zap } from 'lucide-react';
-import { Language, TyphoonCase, TyphoonPoint } from '../../types';
-import { getStormCodeKey, getTyphoonIntro } from '../../features/typhoon/caseCatalog';
+import { Language, TyphoonCase, TyphoonPoint } from '../../../types';
+import { getStormCodeKey, getTyphoonIntro } from '../../../features/typhoon/caseCatalog';
 import { TyphoonMetricsChart } from './TyphoonMetricsChart';
-import { CollapsiblePanel } from '../common/CollapsiblePanel';
+import { CollapsiblePanel } from '../../common/CollapsiblePanel';
 
 export interface TyphoonAnalysisPanelState {
   brief: boolean;

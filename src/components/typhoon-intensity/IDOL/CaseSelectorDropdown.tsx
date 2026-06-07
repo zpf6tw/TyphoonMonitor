@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Language } from '../../types';
-import { CaseSelectorOption } from '../../features/typhoon/caseCatalog';
+import { Language } from '../../../types';
+import { CaseSelectorOption } from '../../../features/typhoon/caseCatalog';
 
 interface CaseSelectorDropdownProps {
   options: CaseSelectorOption[];

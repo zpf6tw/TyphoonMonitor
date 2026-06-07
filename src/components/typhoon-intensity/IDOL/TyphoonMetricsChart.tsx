@@ -10,8 +10,8 @@ import {
   ReferenceLine,
   Legend
 } from 'recharts';
-import { TyphoonPoint, Language } from '../../types';
-import { TRANSLATIONS } from '../../constants';
+import { TyphoonPoint, Language } from '../../../types';
+import { TRANSLATIONS } from '../../../constants';
 
 interface TyphoonMetricsChartProps {
   data: TyphoonPoint[];

@@ -1,11 +1,11 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Cloud, Pause, Play, RotateCcw } from 'lucide-react';
-import { Language } from '../../types';
+import { Language } from '../../../types';
 import {
   CLOUD_IMAGE_MODE_LABELS,
   CLOUD_IMAGE_MODES,
   CloudImageMode,
-} from '../../utils/cloudFrames';
+} from '../../../utils/cloudFrames';
 
 interface TyphoonTimelineControlsProps {
   language: Language;

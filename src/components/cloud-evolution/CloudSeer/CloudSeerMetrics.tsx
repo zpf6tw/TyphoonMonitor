@@ -10,9 +10,9 @@ import {
   ReferenceLine,
   Legend,
 } from 'recharts';
-import { CloudSeerPoint, Language } from '../../types';
-import { TRANSLATIONS } from '../../constants';
-import metricsData from '../../data/metrics.json';
+import { CloudSeerPoint, Language } from '../../../types';
+import { TRANSLATIONS } from '../../../constants';
+import metricsData from '../../../data/metrics.json';
 const BAND_IDS = ['0.64', '1.6', '3.9', '8.6', '10.4', '11.2', '12.3', '13.3'];
 
 interface CloudSeerMetricsProps {

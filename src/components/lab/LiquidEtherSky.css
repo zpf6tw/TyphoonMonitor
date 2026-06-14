@@ -1,0 +1,128 @@
+.liquid-ether-sky {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  contain: paint;
+  isolation: isolate;
+  background: #1688ed;
+}
+
+.liquid-ether-sky__gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(155deg, #0577e8 0%, #138ff0 34%, #43b4f8 64%, #aee5ff 84%, #f8fcff 100%),
+    radial-gradient(ellipse at 18% 8%, rgba(8, 109, 224, 0.96), transparent 54%);
+}
+
+.liquid-ether-sky__ether {
+  position: absolute;
+  inset: -8%;
+  height: auto;
+  width: auto;
+  opacity: 0.5;
+  filter: blur(0.5px) saturate(0.92);
+  mix-blend-mode: screen;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.liquid-ether-sky__ether.liquid-ether-container {
+  height: auto;
+  width: auto;
+}
+
+.liquid-ether-sky__ether canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.liquid-ether-sky__clouds {
+  position: absolute;
+  inset: -14% -10%;
+  opacity: 0.9;
+  filter: blur(10px);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.liquid-ether-sky__clouds--main {
+  background:
+    radial-gradient(ellipse 25% 11% at 6% 45%, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.86) 34%, transparent 72%),
+    radial-gradient(ellipse 18% 8% at 28% 38%, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.7) 42%, transparent 76%),
+    radial-gradient(ellipse 28% 10% at 53% 49%, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.72) 38%, transparent 78%),
+    radial-gradient(ellipse 33% 13% at 82% 41%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.68) 42%, transparent 82%),
+    radial-gradient(ellipse 35% 10% at 88% 70%, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.35) 44%, transparent 80%);
+  animation: liquid-ether-cloud-drift 72s ease-in-out infinite;
+}
+
+.liquid-ether-sky__clouds--wisps {
+  inset: -8% -12%;
+  opacity: 0.72;
+  filter: blur(16px);
+  background:
+    radial-gradient(ellipse 21% 6% at 42% 24%, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.34) 46%, transparent 78%),
+    radial-gradient(ellipse 26% 7% at 66% 32%, rgba(255, 255, 255, 0.66) 0%, rgba(255, 255, 255, 0.36) 44%, transparent 78%),
+    radial-gradient(ellipse 28% 6% at 32% 66%, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.28) 48%, transparent 78%),
+    radial-gradient(ellipse 20% 5% at 90% 12%, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.36) 46%, transparent 80%);
+  animation: liquid-ether-wisp-drift 96s ease-in-out infinite;
+}
+
+.liquid-ether-sky__readability {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(2, 61, 130, 0.42) 0%, rgba(8, 126, 220, 0.18) 36%, transparent 76%);
+}
+
+.liquid-ether-sky__haze {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(224, 247, 255, 0.18) 78%, rgba(255, 255, 255, 0.42) 100%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, transparent 45%, rgba(255, 255, 255, 0.18) 100%);
+}
+
+@keyframes liquid-ether-cloud-drift {
+  0%,
+  100% {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(4%, -2%, 0) scale(1.04);
+  }
+}
+
+@keyframes liquid-ether-wisp-drift {
+  0%,
+  100% {
+    transform: translate3d(3%, -1%, 0) scale(1.02);
+  }
+
+  50% {
+    transform: translate3d(-5%, 2%, 0) scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-ether-sky__clouds {
+    animation: none;
+  }
+
+  .liquid-ether-sky__ether {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .liquid-ether-sky__ether {
+    opacity: 0.38;
+  }
+
+  .liquid-ether-sky__clouds {
+    filter: blur(14px);
+  }
+}

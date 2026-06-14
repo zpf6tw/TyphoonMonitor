@@ -421,17 +421,16 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
               </div>
               <div>
                  <h4 className="text-sm font-bold text-slate-800">{t('cloud_timeline')}</h4>
-                 <p className="text-[10px] text-slate-400 font-medium flex items-center gap-2">
-                   <span className="inline-block w-2 h-2 rounded-full bg-slate-400" /> {t('past_input')}
-                   <span className="mx-2">|</span>
-                   <span className="inline-block w-2 h-2 rounded-full bg-blue-500" /> {t('future_pred')}
-                 </p>
+                 <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                   <span className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-500">{t('past_input')}</span>
+                   <span className="rounded-md bg-blue-50 px-2.5 py-1 text-blue-600">{t('future_pred')}</span>
+                 </div>
               </div>
             </div>
             
             <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
                <div className="text-right">
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{language === 'en' ? 'Nowcasting Time' : '预报时间'}</p>
+                  <p className="text-[11px] font-semibold text-slate-400">{language === 'en' ? 'Nowcasting Time' : '预报时间'}</p>
                   <p className="text-sm font-bold text-blue-600">{currentPoint.time}</p>
                </div>
                <div className="h-8 w-px bg-slate-200" />

@@ -1,6 +1,10 @@
 export {
-  LabOverview,
-  LabPublications,
-  LabResearch,
-  LabTeam,
+  LabHome,
+  LabPublicationsPage,
+  LabTeamPage,
 } from './LabPages';
+
+export {
+  LiquidEther,
+  LiquidEtherSky,
+} from './LiquidEtherSky';

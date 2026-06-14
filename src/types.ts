@@ -30,7 +30,8 @@ export interface TyphoonCase {
 export type Language = 'en' | 'zh';
 
 // 用于管理主视图状态的新类型
-export type ViewType = 'map' | 'cloudseer'| 'lab_overview' | 'lab_team' | 'lab_research' | 'lab_publications';
+export type ViewType = 'lab_home' | 'lab_team' | 'lab_publications' | 'idol' | 'cloudseer';
+export type LabSectionId = 'overview' | 'team' | 'research' | 'publications';
 
 export interface Translations {
   [key: string]: {

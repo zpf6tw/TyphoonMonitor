@@ -2,23 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import { PanelLeftOpen, PanelRightOpen, Activity, Wind, Zap, PanelRightClose } from 'lucide-react';
 import { Sidebar } from './components/layout';
-import { LabOverview, LabPublications, LabResearch, LabTeam } from './components/lab';
-import {
-  TyphoonAnalysisPanel,
-  TyphoonMap,
-  TyphoonOverlayControls,
-  TyphoonTimelineControls,
-} from './components/typhoon-intensity';
 import type {
   TyphoonAnalysisPanelKey,
   TyphoonAnalysisPanelState,
 } from './components/typhoon-intensity';
-import {
-  CloudSeerMetrics,
-  CloudSeerView,
-  ModelPrinciplePanel,
-  MotionVectorField,
-} from './components/cloud-evolution';
 import { CLOUDSEER_CASES, CLOUDSEER_BANDS } from './utils/dataGenerator';
 import { CollapsiblePanel } from './components/common';
 import {
@@ -33,7 +20,7 @@ import {
 } from './features/typhoon/cloudFrameMatcher';
 import { toTimelineShortLabel } from './features/typhoon/time';
 import { TRANSLATIONS } from './constants';
-import { Language, ViewType } from './types';
+import { LabSectionId, Language, ViewType } from './types';
 import { MOCK_CASES } from './utils/dataGenerator';
 import {
   CLOUD_FRAMES_BY_STORM,
@@ -46,9 +33,27 @@ const PLAYBACK_INTERVAL_MS = 1200;
 const SIDEBAR_WIDTH = 240;
 const RIGHT_PANEL_WIDTH = 420;
 
+const LabHome = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabHome })));
+const LabPublicationsPage = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabPublicationsPage })));
+const LabTeamPage = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabTeamPage })));
+const TyphoonAnalysisPanel = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonAnalysisPanel })));
+const TyphoonMap = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonMap })));
+const TyphoonOverlayControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonOverlayControls })));
+const TyphoonTimelineControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonTimelineControls })));
+const CloudSeerMetrics = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerMetrics })));
+const CloudSeerView = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerView })));
+const ModelPrinciplePanel = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.ModelPrinciplePanel })));
+const MotionVectorField = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.MotionVectorField })));
+
+const LoadingSurface: React.FC<{ panel?: boolean }> = ({ panel = false }) => (
+  <div className={`flex ${panel ? 'h-full w-[420px]' : 'h-full w-full'} items-center justify-center bg-slate-50`}>
+    <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-sky-600 motion-safe:animate-spin" />
+  </div>
+);
+
 const App: React.FC = () => {
   // ===== 台风模块状态 =====
-  const [language, setLanguage] = useState<Language>('zh');
+  const language: Language = 'zh';
   const [selectedCaseId, setSelectedCaseId] = useState(CASE_SELECTOR_OPTIONS[0]?.id || MOCK_CASES[0].id);
   const [activeAnalysisStormCode, setActiveAnalysisStormCode] = useState(DUAL_TYPHOON_STORM_CODES[0]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -57,8 +62,9 @@ const App: React.FC = () => {
   const readyFrameIndicesRef = useRef<Set<number>>(new Set());
   const [loadedFrameCount, setLoadedFrameCount] = useState(0);
 
-  const [currentView, setCurrentView] = useState<ViewType>('map');
-  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [currentView, setCurrentView] = useState<ViewType>('lab_home');
+  const [activeLabSection, setActiveLabSection] = useState<LabSectionId>('overview');
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [showCloudMap, setShowCloudMap] = useState(true);
   const [cloudMode, setCloudMode] = useState<CloudImageMode>('pseudoColor');
@@ -82,7 +88,7 @@ const App: React.FC = () => {
     principle: true,
   });
 
-  const t = useCallback((key: string) => TRANSLATIONS[key][language], [language]);
+  const t = useCallback((key: string) => TRANSLATIONS[key]?.zh || key, []);
 
   const togglePanel = (key: TyphoonAnalysisPanelKey) => {
     setPanels(prev => ({ ...prev, [key]: !prev[key] }));
@@ -260,7 +266,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
-    if (isPlaying && currentView === 'map') {
+    if (isPlaying && currentView === 'idol') {
       interval = setInterval(() => {
         setCurrentIndex(prev => {
           if (prev >= timelineData.length - 1) {
@@ -303,8 +309,8 @@ const App: React.FC = () => {
     setShowCloudMap(true);
   }, []);
 
-  // ===== 地图视图渲染 =====
-  const renderMapView = () => {
+  // ===== IDOL 视图渲染 =====
+  const renderIdolView = () => {
     if (!currentPoint) return null;
     return (
       <>
@@ -321,7 +327,7 @@ const App: React.FC = () => {
             legendLeftClassName={!isLeftPanelOpen ? 'left-[4.5rem]' : 'left-6'}
             onCloudFrameLoaded={handleCloudFrameLoaded}
             linkedTyphoon={linkedTyphoonCase ? {
-              name: language === 'en' ? linkedTyphoonCase.nameEn : linkedTyphoonCase.nameZh,
+              name: linkedTyphoonCase.nameZh,
               data: linkedTyphoonCase.data,
               currentIndex: linkedTyphoonCurrentIndex,
             } : null}
@@ -382,14 +388,12 @@ const App: React.FC = () => {
   // ===== 主内容渲染 =====
   const renderMainContent = () => {
     switch (currentView) {
-      case 'lab_overview':
-        return <LabOverview language={language} />;
+      case 'lab_home':
+        return <LabHome onNavigate={setCurrentView} onActiveSectionChange={setActiveLabSection} />;
       case 'lab_team':
-        return <LabTeam language={language} />;
-      case 'lab_research':
-        return <LabResearch language={language} />;
+        return <LabTeamPage onNavigate={setCurrentView} />;
       case 'lab_publications':
-        return <LabPublications language={language} />;
+        return <LabPublicationsPage onNavigate={setCurrentView} />;
       case 'cloudseer':
         return (
           <CloudSeerView
@@ -411,33 +415,35 @@ const App: React.FC = () => {
             onToggleRightPanel={() => setIsCloudseerRightPanelOpen(!isCloudseerRightPanelOpen)}
           />
         );
-      case 'map':
+      case 'idol':
+        return renderIdolView();
       default:
-        return renderMapView();
+        return <LabHome onNavigate={setCurrentView} onActiveSectionChange={setActiveLabSection} />;
     }
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#eef9ff] font-sans">
       {/* 左侧边栏 */}
       <motion.aside
-        initial={{ width: SIDEBAR_WIDTH }}
+        initial={false}
         animate={{ width: isLeftPanelOpen ? SIDEBAR_WIDTH : 0 }}
         transition={{ duration: 0.4, ease: 'easeInOut' }}
-        className="flex-shrink-0 overflow-hidden relative z-20"
+        className={`absolute inset-y-0 left-0 z-30 flex-shrink-0 lg:relative lg:inset-auto ${isLeftPanelOpen ? 'overflow-visible' : 'overflow-hidden'}`}
       >
         <Sidebar
-          language={language}
-          onLanguageToggle={() => setLanguage(currentLanguage => currentLanguage === 'en' ? 'zh' : 'en')}
           currentView={currentView}
+          activeLabSection={activeLabSection}
           onNavigate={setCurrentView}
           onCollapse={() => setIsLeftPanelOpen(false)}
         />
       </motion.aside>
 
       {/* 主内容 */}
-      <main className="flex-1 relative overflow-hidden flex flex-col bg-slate-100">
-        {renderMainContent()}
+      <main className={`relative flex min-w-0 flex-1 flex-col overflow-hidden ${currentView === 'lab_home' || currentView === 'lab_team' || currentView === 'lab_publications' ? 'bg-[#eef9ff]' : 'bg-slate-100'}`}>
+        <React.Suspense fallback={<LoadingSurface />}>
+          {renderMainContent()}
+        </React.Suspense>
 
         {!isLeftPanelOpen && (
           <motion.button
@@ -445,7 +451,7 @@ const App: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsLeftPanelOpen(true)}
-            className="absolute top-6 left-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+            className="absolute top-6 left-6 z-[1002] rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-lg transition-colors hover:bg-slate-50 hover:text-blue-600"
             title="Expand Sidebar"
           >
             <PanelLeftOpen size={20} />
@@ -455,7 +461,7 @@ const App: React.FC = () => {
 
       {/* 台风右侧面板 */}
       <AnimatePresence>
-        {currentView === 'map' && (
+        {currentView === 'idol' && (
           <motion.aside
             initial={{ width: RIGHT_PANEL_WIDTH, opacity: 1 }}
             animate={{ width: isRightPanelOpen ? RIGHT_PANEL_WIDTH : 0, opacity: 1 }}
@@ -463,22 +469,24 @@ const App: React.FC = () => {
             transition={{ duration: 0.4, ease: 'easeInOut' }}
             className="h-full border-l border-slate-200 bg-white z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
           >
-            {isRightPanelOpen && (
-              <TyphoonAnalysisPanel
-                width={RIGHT_PANEL_WIDTH}
-                language={language}
-                selectedCase={selectedCase}
-                selectedCaseGroup={selectedCaseGroup}
-                selectedStormCode={selectedStormCode}
-                panels={panels}
-                timelineData={timelineData}
-                currentIndex={currentIndex}
-                t={t}
-                onTogglePanel={togglePanel}
-                onAnalysisCaseChange={handleAnalysisCaseChange}
-                onClose={() => setIsRightPanelOpen(false)}
-              />
-            )}
+            <React.Suspense fallback={<LoadingSurface panel />}>
+              {isRightPanelOpen && (
+                <TyphoonAnalysisPanel
+                  width={RIGHT_PANEL_WIDTH}
+                  language={language}
+                  selectedCase={selectedCase}
+                  selectedCaseGroup={selectedCaseGroup}
+                  selectedStormCode={selectedStormCode}
+                  panels={panels}
+                  timelineData={timelineData}
+                  currentIndex={currentIndex}
+                  t={t}
+                  onTogglePanel={togglePanel}
+                  onAnalysisCaseChange={handleAnalysisCaseChange}
+                  onClose={() => setIsRightPanelOpen(false)}
+                />
+              )}
+            </React.Suspense>
           </motion.aside>
         )}
       </AnimatePresence>
@@ -493,60 +501,62 @@ const App: React.FC = () => {
             transition={{ duration: 0.4, ease: 'easeInOut' }}
             className="h-full border-l border-slate-200 bg-white z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
           >
-            <div className="w-[420px] h-full flex flex-col">
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <div className="flex items-center gap-2 text-slate-700 font-bold">
-                  <Activity size={18} className="text-blue-500" />
-                  <span>{t('analysis_dashboard')}</span>
+            <React.Suspense fallback={<LoadingSurface panel />}>
+              <div className="w-[420px] h-full flex flex-col">
+                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <div className="flex items-center gap-2 text-slate-700 font-bold">
+                    <Activity size={18} className="text-blue-500" />
+                    <span>{t('analysis_dashboard')}</span>
+                  </div>
+                  <button
+                    onClick={() => setIsCloudseerRightPanelOpen(false)}
+                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
+                  >
+                    <PanelRightClose size={18} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsCloudseerRightPanelOpen(false)}
-                  className="p-1.5 rounded-md text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors"
-                >
-                  <PanelRightClose size={18} />
-                </button>
+
+                <div className="flex-1 overflow-y-auto p-6 gap-4 flex flex-col">
+                  <CollapsiblePanel
+                    title={t('cloudseer_metrics')}
+                    isOpen={cloudseerPanels.metrics}
+                    onToggle={() => toggleCloudseerPanel('metrics')}
+                  >
+                    <CloudSeerMetrics
+                      data={CLOUDSEER_CASES.find(c => c.id === cloudseerSelectedCaseId)?.data || CLOUDSEER_CASES[0].data}
+                      currentIndex={cloudseerCurrentIndex}
+                      language={language}
+                      selectedBandId={cloudseerSelectedBandId}
+                    />
+                  </CollapsiblePanel>
+
+                  <CollapsiblePanel
+                    title={t('motion_vector_field')}
+                    isOpen={cloudseerPanels.motion}
+                    onToggle={() => toggleCloudseerPanel('motion')}
+                    extraHeader={<Wind size={14} className="text-blue-500" />}
+                  >
+                    <MotionVectorField
+                      data={
+                        (CLOUDSEER_CASES.find(c => c.id === cloudseerSelectedCaseId)?.data || CLOUDSEER_CASES[0].data)
+                        [cloudseerCurrentIndex]?.displacementField || []
+                      }
+                      language={language}
+                      currentIndex={cloudseerCurrentIndex}
+                    />
+                  </CollapsiblePanel>
+
+                  <CollapsiblePanel
+                    title={t('cloudseer_arch')}
+                    isOpen={cloudseerPanels.principle}
+                    onToggle={() => toggleCloudseerPanel('principle')}
+                    extraHeader={<Zap size={14} className="text-emerald-500 fill-emerald-500" />}
+                  >
+                    <ModelPrinciplePanel language={language} />
+                  </CollapsiblePanel>
+                </div>
               </div>
-
-              <div className="flex-1 overflow-y-auto p-6 gap-4 flex flex-col">
-                <CollapsiblePanel
-                  title={t('cloudseer_metrics')}
-                  isOpen={cloudseerPanels.metrics}
-                  onToggle={() => toggleCloudseerPanel('metrics')}
-                >
-                  <CloudSeerMetrics
-                    data={CLOUDSEER_CASES.find(c => c.id === cloudseerSelectedCaseId)?.data || CLOUDSEER_CASES[0].data}
-                    currentIndex={cloudseerCurrentIndex}
-                    language={language}
-                    selectedBandId={cloudseerSelectedBandId}
-                  />
-                </CollapsiblePanel>
-
-                <CollapsiblePanel
-                  title={t('motion_vector_field')}
-                  isOpen={cloudseerPanels.motion}
-                  onToggle={() => toggleCloudseerPanel('motion')}
-                  extraHeader={<Wind size={14} className="text-blue-500" />}
-                >
-                  <MotionVectorField
-                    data={
-                      (CLOUDSEER_CASES.find(c => c.id === cloudseerSelectedCaseId)?.data || CLOUDSEER_CASES[0].data)
-                      [cloudseerCurrentIndex]?.displacementField || []
-                    }
-                    language={language}
-                    currentIndex={cloudseerCurrentIndex}
-                  />
-                </CollapsiblePanel>
-
-                <CollapsiblePanel
-                  title={t('cloudseer_arch')}
-                  isOpen={cloudseerPanels.principle}
-                  onToggle={() => toggleCloudseerPanel('principle')}
-                  extraHeader={<Zap size={14} className="text-emerald-500 fill-emerald-500" />}
-                >
-                  <ModelPrinciplePanel language={language} />
-                </CollapsiblePanel>
-              </div>
-            </div>
+            </React.Suspense>
           </motion.aside>
         )}
       </AnimatePresence>

@@ -1,58 +1,165 @@
 {
-  "leader": {
-    "name": {
-      "zh": "教授 A",
-      "en": "Professor A"
-    },
-    "role": {
-      "zh": "教授、博士生导师",
-      "en": "Professor, Doctoral Supervisor"
-    },
-    "desc": {
-      "zh": "主要研究方向为计算机视觉、科学人工智能在气象领域的应用等，主持多项国家级、省部级科研项目，在相关领域发表高水平学术论文多篇，具备丰富的研究生培养与科研指导经验。",
-      "en": "His main research interests include Computer Vision and AI for Science (Meteorology). He has presided over multiple national and provincial-level research projects, published numerous high-level academic papers, and possesses extensive experience in graduate supervision."
-    }
+  "advisorProfile": {
+    "name": "白琮",
+    "title": "教授，博士生导师",
+    "school": "浙江工业大学计算机科学与技术学院",
+    "research": "计算机视觉与智慧气象",
+    "bio": "博士，浙江工业大学计算机科学与技术学院，教授，博士生导师。学院党委委员，院人才办主任，计算机视觉研究所执行所长。斯坦福大学全球前2%顶尖科学家入选者。研究方向为计算机视觉与智慧气象。主持国自然联合重点、面上、青年、科技部重点研发计划课题等省部级以上项目10项；在国内外知名学术期刊或会议上发表论文100余篇，包括Nature Communications、NeurIPS、ICML、AAAI、KDD、ACM MM、IEEE TGRS、IEEE TNNLS、IEEE TCBY、IEEE TMM、IEEE GRSL、GRL等领域内的权威期刊或会议等，其中ESI高被引论文1篇，《软件学报》2019年和2020年高影响力论文各1篇。曾5次获得国际/国内知名学术会议的最佳/优秀论文奖。担任Elsevier旗下SCI期刊《Displays》的编委会委员，IEEE《Journal of Selected Topics in Applied Earth Observations and Remote Sensing》副编辑。"
   },
-  "members": [
+  "facultyMembers": [
     {
-      "name": { "zh": "学生 A", "en": "Student A" },
-      "role": { "zh": "博士研究生", "en": "PhD Candidate" },
-      "type": "Student"
+      "name": "张敬林",
+      "title": "教授"
     },
     {
-      "name": { "zh": "学生 B", "en": "Student B" },
-      "role": { "zh": "博士研究生", "en": "PhD Candidate" },
-      "type": "Student"
+      "name": "产思贤",
+      "title": "副教授"
     },
     {
-      "name": { "zh": "学生 C", "en": "Student C" },
-      "role": { "zh": "硕士研究生", "en": "Master Student" },
-      "type": "Student"
+      "name": "王琼",
+      "title": "硕士生导师",
+      "research": "云图识别"
     },
     {
-      "name": { "zh": "学生 D", "en": "Student D" },
-      "role": { "zh": "硕士研究生", "en": "Master Student" },
-      "type": "Student"
+      "name": "穆攀",
+      "title": "硕士生导师",
+      "research": "智慧台风"
     },
     {
-      "name": { "zh": "学生 E", "en": "Student E" },
-      "role": { "zh": "硕士研究生", "en": "Master Student" },
-      "type": "Student"
+      "name": "王铮",
+      "title": "硕士生导师",
+      "research": "智慧降水"
     },
     {
-      "name": { "zh": "学生 F", "en": "Student F" },
-      "role": { "zh": "硕士研究生", "en": "Master Student" },
-      "type": "Student"
+      "name": "陈佳楠",
+      "title": "博士后"
+    }
+  ],
+  "phdStudents": [
+    {
+      "name": "严涵婷",
+      "research": "台风估计",
+      "note": "浙江大学联培",
+      "year": "2025"
     },
     {
-      "name": { "zh": "学生 G", "en": "Student G" },
-      "role": { "zh": "本科生", "en": "Undergraduate" },
-      "type": "Intern"
+      "name": "姜子浔",
+      "research": "云预测",
+      "year": "2024"
     },
     {
-      "name": { "zh": "学生 H", "en": "Student H" },
-      "role": { "zh": "本科生", "en": "Undergraduate" },
-      "type": "Intern"
+      "name": "欧阳鹏翔",
+      "research": "遥感大模型",
+      "note": "复旦大学联培",
+      "year": "2024"
+    },
+    {
+      "name": "张诗琪",
+      "research": "台风预测",
+      "note": "英国布里斯托大学联培",
+      "year": "2023"
+    },
+    {
+      "name": "黄诚",
+      "research": "台风预测",
+      "note": "英国布里斯托大学联培，台州学院教师",
+      "year": "2021"
+    }
+  ],
+  "masterStudents": [
+    {
+      "name": "张敏靖",
+      "research": "天气识别",
+      "note": "丽水市特种设备检测院",
+      "year": "2019"
+    },
+    {
+      "name": "孙丰",
+      "research": "降水预测",
+      "note": "快手",
+      "year": "2020"
+    },
+    {
+      "name": "赵董孝元",
+      "research": "天气识别",
+      "note": "瓴羊科技",
+      "year": "2021"
+    },
+    {
+      "name": "潘建成",
+      "research": "遥感大模型",
+      "note": "清华大学联培",
+      "year": "2022"
+    },
+    {
+      "name": "何波贤",
+      "research": "降水反演",
+      "note": "浅海科技",
+      "year": "2022"
+    },
+    {
+      "name": "张晗奕",
+      "research": "降水预测",
+      "note": "萧山农商银行",
+      "year": "2022"
+    },
+    {
+      "name": "胡至盈",
+      "research": "天气识别",
+      "year": "2023"
+    },
+    {
+      "name": "应楷",
+      "research": "降水反演",
+      "note": "达摩院",
+      "year": "2023"
+    },
+    {
+      "name": "林仲豪",
+      "research": "沙尘检测与预测",
+      "note": "浙商银行",
+      "year": "2023"
+    },
+    {
+      "name": "王奕欣",
+      "research": "台风生成预测",
+      "note": "美团",
+      "year": "2023"
+    },
+    {
+      "name": "洪滔",
+      "research": "降水预测",
+      "year": "2024"
+    },
+    {
+      "name": "朱宇超",
+      "research": "台风预测",
+      "year": "2024"
+    },
+    {
+      "name": "蔡志鹏",
+      "research": "沙尘检测与预测",
+      "year": "2024"
+    },
+    {
+      "name": "严明",
+      "research": "太阳辐照度预测",
+      "year": "2024"
+    },
+    {
+      "name": "黄天乐",
+      "research": "云预测",
+      "year": "2025"
+    },
+    {
+      "name": "张耀丹",
+      "research": "云预测",
+      "year": "2026"
+    },
+    {
+      "name": "朱鹏飞",
+      "research": "台风估计",
+      "year": "2026"
     }
   ]
 }

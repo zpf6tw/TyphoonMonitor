@@ -7,7 +7,7 @@ import {
   CloudImageMode,
 } from '../../../utils/cloudFrames';
 
-interface TyphoonTimelineControlsProps {
+interface IDOLTimelineControlsProps {
   language: Language;
   isPlaying: boolean;
   showCloudMap: boolean;
@@ -32,7 +32,7 @@ interface TyphoonTimelineControlsProps {
 }
 
 // 底部时间轴集中处理播放、云图模式、缓冲提示和逐帧跳转控制。
-export const TyphoonTimelineControls: React.FC<TyphoonTimelineControlsProps> = ({
+export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
   language,
   isPlaying,
   showCloudMap,

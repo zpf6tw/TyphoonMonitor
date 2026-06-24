@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-interface TyphoonMapProps {
+interface IDOLMapProps {
   data: TyphoonPoint[];
   currentIndex: number;
   showCloudMap: boolean;
@@ -107,7 +107,7 @@ const CLOUD_OVERLAY_OPACITY = 1;
 const LINKED_STORM_COLOR = '#f59e0b';
 const EMPTY_CLOUD_FRAME_URLS: Array<string | null> = [];
 
-export const TyphoonMap: React.FC<TyphoonMapProps> = ({
+export const IDOLMap: React.FC<IDOLMapProps> = ({
   data,
   currentIndex,
   showCloudMap,

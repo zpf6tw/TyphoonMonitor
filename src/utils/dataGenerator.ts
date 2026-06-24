@@ -1,8 +1,8 @@
 
 import { TyphoonCase } from '../types';
-import typhoonData from '../data/typhoonData.json';
+import idolTyphoonData from '../data/IDOLTyphoonData.json';
 
-export const MOCK_CASES: TyphoonCase[] = typhoonData as TyphoonCase[];
+export const MOCK_CASES: TyphoonCase[] = idolTyphoonData as TyphoonCase[];
 
 
 import { CloudSeerCase, CloudSeerPoint, CloudSeerBand, CloudSeerModel } from '../types';

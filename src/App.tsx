@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PanelLeftOpen, PanelRightOpen, Activity, Wind, Zap, PanelRightClose } from 'lucide-react';
+import { PanelLeftOpen, PanelRightOpen, Activity, Wind, PanelRightClose } from 'lucide-react';
 import { Sidebar } from './components/layout';
 import type {
-  TyphoonAnalysisPanelKey,
-  TyphoonAnalysisPanelState,
+  IDOLAnalysisPanelKey,
+  IDOLAnalysisPanelState,
 } from './components/typhoon-intensity';
 import { CLOUDSEER_CASES, CLOUDSEER_BANDS } from './utils/dataGenerator';
 import { CollapsiblePanel } from './components/common';
@@ -36,13 +36,12 @@ const RIGHT_PANEL_WIDTH = 420;
 const LabHome = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabHome })));
 const LabPublicationsPage = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabPublicationsPage })));
 const LabTeamPage = React.lazy(() => import('./components/lab').then(module => ({ default: module.LabTeamPage })));
-const TyphoonAnalysisPanel = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonAnalysisPanel })));
-const TyphoonMap = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonMap })));
-const TyphoonOverlayControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonOverlayControls })));
-const TyphoonTimelineControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.TyphoonTimelineControls })));
+const IDOLAnalysisPanel = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.IDOLAnalysisPanel })));
+const IDOLMap = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.IDOLMap })));
+const IDOLOverlayControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.IDOLOverlayControls })));
+const IDOLTimelineControls = React.lazy(() => import('./components/typhoon-intensity').then(module => ({ default: module.IDOLTimelineControls })));
 const CloudSeerMetrics = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerMetrics })));
 const CloudSeerView = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerView })));
-const ModelPrinciplePanel = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.ModelPrinciplePanel })));
 const MotionVectorField = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.MotionVectorField })));
 
 const LoadingSurface: React.FC<{ panel?: boolean }> = ({ panel = false }) => (
@@ -69,10 +68,9 @@ const App: React.FC = () => {
   const [showCloudMap, setShowCloudMap] = useState(true);
   const [cloudMode, setCloudMode] = useState<CloudImageMode>('pseudoColor');
 
-  const [panels, setPanels] = useState<TyphoonAnalysisPanelState>({
+  const [panels, setPanels] = useState<IDOLAnalysisPanelState>({
     brief: true,
     metrics: true,
-    physics: true,
   });
 
   // ===== CloudSeer 模块状态 =====
@@ -85,12 +83,11 @@ const App: React.FC = () => {
   const [cloudseerPanels, setCloudseerPanels] = useState({
     metrics: true,
     motion: true,
-    principle: true,
   });
 
   const t = useCallback((key: string) => TRANSLATIONS[key]?.zh || key, []);
 
-  const togglePanel = (key: TyphoonAnalysisPanelKey) => {
+  const togglePanel = (key: IDOLAnalysisPanelKey) => {
     setPanels(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -315,7 +312,7 @@ const App: React.FC = () => {
     return (
       <>
         <div className="absolute inset-0 z-0">
-          <TyphoonMap
+          <IDOLMap
             data={timelineData}
             currentIndex={currentIndex}
             showCloudMap={showCloudMap}
@@ -340,14 +337,14 @@ const App: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsRightPanelOpen(true)}
-            className="absolute top-6 right-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+            className="absolute top-6 right-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-sky-600 hover:bg-slate-50 transition-colors"
             title="Expand Dashboard"
           >
             <PanelRightOpen size={20} />
           </motion.button>
         )}
 
-        <TyphoonOverlayControls
+        <IDOLOverlayControls
           language={language}
           currentPoint={currentPoint}
           selectedCaseId={selectedCaseId}
@@ -358,7 +355,7 @@ const App: React.FC = () => {
           onCaseChange={handleCaseSelectionChange}
         />
 
-        <TyphoonTimelineControls
+        <IDOLTimelineControls
           language={language}
           isPlaying={isPlaying}
           showCloudMap={showCloudMap}
@@ -428,8 +425,8 @@ const App: React.FC = () => {
       <motion.aside
         initial={false}
         animate={{ width: isLeftPanelOpen ? SIDEBAR_WIDTH : 0 }}
-        transition={{ duration: 0.4, ease: 'easeInOut' }}
-        className={`absolute inset-y-0 left-0 z-30 flex-shrink-0 lg:relative lg:inset-auto ${isLeftPanelOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+        transition={{ duration: 0.62, ease: [0.22, 1, 0.36, 1] }}
+        className="absolute inset-y-0 left-0 z-30 flex-shrink-0 overflow-hidden lg:relative lg:inset-auto"
       >
         <Sidebar
           currentView={currentView}
@@ -451,7 +448,7 @@ const App: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsLeftPanelOpen(true)}
-            className="absolute top-6 left-6 z-[1002] rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-lg transition-colors hover:bg-slate-50 hover:text-blue-600"
+            className="absolute top-6 left-6 z-[1002] rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-lg transition-colors hover:bg-slate-50 hover:text-sky-600"
             title="Expand Sidebar"
           >
             <PanelLeftOpen size={20} />
@@ -471,7 +468,7 @@ const App: React.FC = () => {
           >
             <React.Suspense fallback={<LoadingSurface panel />}>
               {isRightPanelOpen && (
-                <TyphoonAnalysisPanel
+                <IDOLAnalysisPanel
                   width={RIGHT_PANEL_WIDTH}
                   language={language}
                   selectedCase={selectedCase}
@@ -505,7 +502,7 @@ const App: React.FC = () => {
               <div className="w-[420px] h-full flex flex-col">
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Activity size={18} className="text-blue-500" />
+                    <Activity size={18} className="text-sky-500" />
                     <span>{t('analysis_dashboard')}</span>
                   </div>
                   <button
@@ -534,7 +531,7 @@ const App: React.FC = () => {
                     title={t('motion_vector_field')}
                     isOpen={cloudseerPanels.motion}
                     onToggle={() => toggleCloudseerPanel('motion')}
-                    extraHeader={<Wind size={14} className="text-blue-500" />}
+                    extraHeader={<Wind size={14} className="text-sky-500" />}
                   >
                     <MotionVectorField
                       data={
@@ -544,15 +541,6 @@ const App: React.FC = () => {
                       language={language}
                       currentIndex={cloudseerCurrentIndex}
                     />
-                  </CollapsiblePanel>
-
-                  <CollapsiblePanel
-                    title={t('cloudseer_arch')}
-                    isOpen={cloudseerPanels.principle}
-                    onToggle={() => toggleCloudseerPanel('principle')}
-                    extraHeader={<Zap size={14} className="text-emerald-500 fill-emerald-500" />}
-                  >
-                    <ModelPrinciplePanel language={language} />
                   </CollapsiblePanel>
                 </div>
               </div>

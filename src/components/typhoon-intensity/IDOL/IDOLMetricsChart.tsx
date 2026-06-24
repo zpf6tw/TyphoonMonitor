@@ -13,7 +13,7 @@ import {
 import { TyphoonPoint, Language } from '../../../types';
 import { TRANSLATIONS } from '../../../constants';
 
-interface TyphoonMetricsChartProps {
+interface IDOLMetricsChartProps {
   data: TyphoonPoint[];
   currentIndex: number;
   language: Language;
@@ -80,7 +80,7 @@ const formatDayLabel = (bucket: string, language: Language): string => {
   return language === 'zh' ? `${Number(day)}日` : day;
 };
 
-export const TyphoonMetricsChart: React.FC<TyphoonMetricsChartProps> = ({ data, currentIndex, language }) => {
+export const IDOLMetricsChart: React.FC<IDOLMetricsChartProps> = ({ data, currentIndex, language }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
   const currentPoint = data[currentIndex];
 

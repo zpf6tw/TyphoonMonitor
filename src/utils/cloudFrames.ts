@@ -1,5 +1,5 @@
 import type { TyphoonCase, TyphoonPoint } from '../types';
-import typhoonData from '../data/typhoonData.json';
+import idolTyphoonData from '../data/IDOLTyphoonData.json';
 
 export interface CloudFrameMeta {
   id: string;
@@ -131,7 +131,7 @@ const buildCloudFrames = (
 };
 
 const buildCloudFramesByStorm = (): Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>> => {
-  return (typhoonData as TyphoonCase[]).reduce<Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>>>(
+  return (idolTyphoonData as TyphoonCase[]).reduce<Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>>>(
     (result, typhoonCase) => {
       const stormKey = extractStormKeyFromCase(typhoonCase);
       if (!stormKey) {
@@ -148,7 +148,7 @@ const buildCloudFramesByStorm = (): Record<StormCloudKey, Record<CloudImageMode,
   );
 };
 
-// 启动时根据 typhoonData 构建云图索引，运行时不再重复扫描数据源。
+// 启动时根据 IDOLTyphoonData 构建云图索引，运行时不再重复扫描数据源。
 export const CLOUD_FRAMES_BY_STORM: Record<StormCloudKey, Record<CloudImageMode, CloudFrameMeta[]>> =
   buildCloudFramesByStorm();
 

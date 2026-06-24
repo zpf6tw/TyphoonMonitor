@@ -1,29 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { PanelRightClose, Settings2, Zap } from 'lucide-react';
+import { PanelRightClose, Settings2 } from 'lucide-react';
 import { Language, TyphoonCase, TyphoonPoint } from '../../../types';
 import { getStormCodeKey, getTyphoonIntro } from '../../../features/typhoon/caseCatalog';
-import { TyphoonMetricsChart } from './TyphoonMetricsChart';
+import { IDOLMetricsChart } from './IDOLMetricsChart';
 import { CollapsiblePanel } from '../../common/CollapsiblePanel';
 
-export interface TyphoonAnalysisPanelState {
+export interface IDOLAnalysisPanelState {
   brief: boolean;
   metrics: boolean;
-  physics: boolean;
 }
 
-export type TyphoonAnalysisPanelKey = keyof TyphoonAnalysisPanelState;
+export type IDOLAnalysisPanelKey = keyof IDOLAnalysisPanelState;
 
-interface TyphoonAnalysisPanelProps {
+interface IDOLAnalysisPanelProps {
   width: number;
   language: Language;
   selectedCase: TyphoonCase;
   selectedCaseGroup: TyphoonCase[];
   selectedStormCode: string;
-  panels: TyphoonAnalysisPanelState;
+  panels: IDOLAnalysisPanelState;
   timelineData: TyphoonPoint[];
   currentIndex: number;
   t: (key: string) => string;
-  onTogglePanel: (key: TyphoonAnalysisPanelKey) => void;
+  onTogglePanel: (key: IDOLAnalysisPanelKey) => void;
   onAnalysisCaseChange: (stormCode: string) => void;
   onClose: () => void;
 }
@@ -60,7 +59,7 @@ const TyphoonCaseTabs: React.FC<{
           type="button"
           key={stormCode}
           onClick={() => onChange(stormCode)}
-          className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white hover:text-blue-600'}`}
+          className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white hover:text-sky-600'}`}
         >
           {language === 'en' ? typhoonCase.nameEn : typhoonCase.nameZh}
         </button>
@@ -69,50 +68,8 @@ const TyphoonCaseTabs: React.FC<{
   </div>
 );
 
-// 物理先验面板展示 Holland 模型符号释义，帮助解释 IDOL 估计约束来源。
-const PhysicsPriorPanel: React.FC<{ t: (key: string) => string }> = ({ t }) => (
-  <div className="space-y-4">
-    <div className="bg-slate-50/80 backdrop-blur-sm p-4 rounded-xl border border-slate-100 font-serif relative">
-      <p className="text-[9px] text-slate-400 font-mono mb-2 uppercase tracking-tighter">
-        {t('holland_model')}
-      </p>
-      <div className="text-[15px] italic text-slate-800 leading-tight tracking-tight py-1">
-        r<sup>B</sup> ln[(p<sub>n</sub> - p<sub>c</sub>) / (p<sub>r</sub> - p<sub>c</sub>)] = A
-      </div>
-
-      <div className="mt-3 pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-y-1.5 gap-x-2">
-        {[
-          ['r', 'physics_param_r'],
-          ['B', 'physics_param_B'],
-          ['p_n', 'physics_param_pn'],
-          ['p_c', 'physics_param_pc'],
-          ['p_r', 'physics_param_pr'],
-          ['A', 'physics_param_A'],
-        ].map(([symbol, labelKey]) => (
-          <div key={symbol} className="flex items-center gap-1.5">
-            <span className="font-serif italic font-bold text-slate-600 text-[10px]">
-              {symbol.startsWith('p_') ? (
-                <>
-                  p<sub>{symbol.slice(2)}</sub>
-                </>
-              ) : symbol}
-            </span>
-            <span className="text-[9px] text-slate-500 leading-none">{t(labelKey)}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-blue-100" />
-    </div>
-
-    <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
-      {t('physics_desc')}
-    </p>
-  </div>
-);
-
-// 右侧分析面板聚合台风特征、指标图表和物理先验三类辅助信息。
-export const TyphoonAnalysisPanel: React.FC<TyphoonAnalysisPanelProps> = ({
+// 右侧分析面板聚合台风特征和指标图表两类辅助信息。
+export const IDOLAnalysisPanel: React.FC<IDOLAnalysisPanelProps> = ({
   width,
   language,
   selectedCase,
@@ -143,7 +100,7 @@ export const TyphoonAnalysisPanel: React.FC<TyphoonAnalysisPanelProps> = ({
     <div className="h-full flex flex-col" style={{ width }}>
       <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <div className="flex items-center gap-2 text-slate-700 font-bold">
-          <Settings2 size={18} className="text-blue-500" />
+          <Settings2 size={18} className="text-sky-500" />
           <span>{t('analysis_dashboard')}</span>
         </div>
         <button
@@ -187,17 +144,8 @@ export const TyphoonAnalysisPanel: React.FC<TyphoonAnalysisPanelProps> = ({
             />
           )}
           {isChartReady && (
-            <TyphoonMetricsChart data={timelineData} currentIndex={currentIndex} language={language} />
+            <IDOLMetricsChart data={timelineData} currentIndex={currentIndex} language={language} />
           )}
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title={t('physics_prior')}
-          isOpen={panels.physics}
-          onToggle={() => onTogglePanel('physics')}
-          extraHeader={<Zap size={14} className="text-blue-500 fill-blue-500" />}
-        >
-          <PhysicsPriorPanel t={t} />
         </CollapsiblePanel>
       </div>
     </div>

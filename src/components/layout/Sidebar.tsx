@@ -49,6 +49,7 @@ const scrollToLabSection = (sectionId: string) => {
 };
 
 const sidebarHeaderVisual = 'radial-gradient(circle at 28% 18%, rgba(255,255,255,0.34), transparent 30%), radial-gradient(circle at 72% 74%, rgba(103,232,249,0.42), transparent 36%), linear-gradient(135deg, #38bdf8 0%, #0ea5e9 54%, #22d3ee 100%)';
+const schoolBadgeUrl = new URL('../../assets/lab/school-badge/school-badge-page-2-white.png', import.meta.url).href;
 
 const NavSubItem: React.FC<SubItem> = ({ label, icon: Icon, active, onClick }) => (
   <button
@@ -56,14 +57,14 @@ const NavSubItem: React.FC<SubItem> = ({ label, icon: Icon, active, onClick }) =
     onClick={onClick}
     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
       active
-        ? 'bg-blue-50 text-blue-600'
+        ? 'bg-sky-50 text-sky-600'
         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
     }`}
   >
     {Icon ? (
-      <Icon size={14} className={active ? 'text-blue-600' : 'text-slate-400'} />
+      <Icon size={14} className={active ? 'text-sky-600' : 'text-slate-400'} />
     ) : (
-      <span className={`ml-1 mr-0.5 h-1.5 w-1.5 rounded-full ${active ? 'bg-blue-600' : 'bg-slate-300'}`} />
+      <span className={`ml-1 mr-0.5 h-1.5 w-1.5 rounded-full ${active ? 'bg-sky-500' : 'bg-slate-300'}`} />
     )}
     <span>{label}</span>
   </button>
@@ -86,7 +87,7 @@ const NavGroupItem: React.FC<{
         aria-expanded={hasSubItems ? expanded : undefined}
         className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors ${
           group.active
-            ? 'bg-blue-50 text-blue-600'
+            ? 'bg-sky-50 text-sky-600'
             : group.disabled
               ? 'cursor-not-allowed text-slate-400 opacity-50'
               : 'text-slate-600 hover:bg-slate-100'
@@ -209,11 +210,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, activ
         <button
           type="button"
           onClick={() => goLab('overview')}
-          className="min-w-0 text-left"
+          className="flex min-w-0 items-center gap-3 text-left"
           title="返回实验室详情"
         >
-          <span className="block text-base font-bold leading-tight text-white drop-shadow-sm">浙江工业大学</span>
-          <span className="mt-1 block text-xs font-semibold leading-4 text-white/82">气象人工智能实验室</span>
+          <img
+            src={schoolBadgeUrl}
+            alt="浙江工业大学校徽"
+            className="h-11 w-11 shrink-0 object-contain drop-shadow-sm"
+          />
+          <span className="min-w-0">
+            <span className="block text-base font-bold leading-tight text-white drop-shadow-sm">浙江工业大学</span>
+            <span className="mt-1 block text-xs font-semibold leading-4 text-white/82">气象人工智能实验室</span>
+          </span>
         </button>
 
         <button

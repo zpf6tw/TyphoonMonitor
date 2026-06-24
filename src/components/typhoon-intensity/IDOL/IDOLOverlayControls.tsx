@@ -4,7 +4,7 @@ import { Language, TyphoonPoint } from '../../../types';
 import { CaseSelectorOption } from '../../../features/typhoon/caseCatalog';
 import { CaseSelectorDropdown } from './CaseSelectorDropdown';
 
-interface TyphoonOverlayControlsProps {
+interface IDOLOverlayControlsProps {
   language: Language;
   currentPoint: TyphoonPoint;
   selectedCaseId: string;
@@ -28,7 +28,7 @@ const NumberValue: React.FC<{ value: number; unit?: string; colorClassName?: str
 );
 
 // 地图上方浮层同时承载案例切换和当前时刻的关键参数对比。
-export const TyphoonOverlayControls: React.FC<TyphoonOverlayControlsProps> = ({
+export const IDOLOverlayControls: React.FC<IDOLOverlayControlsProps> = ({
   language,
   currentPoint,
   selectedCaseId,

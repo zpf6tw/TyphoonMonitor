@@ -230,8 +230,8 @@ const MemberPortrait: React.FC<{
     sm: 'h-16 w-16',
     md: 'h-24 w-24',
     lg: 'h-56 w-40 md:h-64 md:w-48',
-    homeFaculty: 'h-44 w-32 self-center xl:h-48 xl:w-36',
-    card: 'h-44 w-32 self-center',
+    homeFaculty: 'h-48 w-36 self-center xl:h-52 xl:w-40',
+    card: 'h-52 w-38 self-center',
     studentCard: 'h-44 w-32 self-center',
     advisorDetail: 'h-72 w-52',
   }[size];
@@ -272,11 +272,11 @@ const AdvisorHomeCard: React.FC = () => (
 const FacultyHomeCard: React.FC<{
   member: typeof facultyMembers[number];
 }> = ({ member }) => (
-  <article className="flex w-full flex-col rounded-lg border border-slate-200 bg-slate-50 p-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:bg-white hover:shadow-lg xl:p-4">
+  <article className="flex w-full flex-col rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300 hover:bg-white hover:shadow-lg xl:p-5">
     <MemberPortrait name={member.name} size="homeFaculty" className="bg-white" />
     <div className="mt-4 min-w-0">
       <h3 className="whitespace-nowrap text-lg font-bold text-slate-950">{member.name}</h3>
-      <p className="mt-1 whitespace-nowrap text-sm font-semibold text-slate-500 lg:text-xs xl:text-sm">{member.title}</p>
+      <p className="mt-1 whitespace-nowrap text-sm font-semibold text-slate-500">{member.title}</p>
       {member.research && (
         <p className="mt-2 inline-flex whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-100 lg:text-[11px] xl:text-xs">
           {member.research}
@@ -307,7 +307,7 @@ const TeamSection: React.FC<{ onNavigate?: (view: ViewType) => void }> = ({ onNa
 
     <div className="space-y-6">
       <AdvisorHomeCard />
-      <div className="grid justify-start gap-4 [grid-template-columns:repeat(2,minmax(0,1fr))] sm:[grid-template-columns:repeat(3,minmax(0,1fr))] lg:[grid-template-columns:repeat(6,minmax(0,1fr))] xl:gap-5">
+      <div className="grid gap-4 [grid-template-columns:repeat(2,minmax(0,1fr))] sm:[grid-template-columns:repeat(3,minmax(0,1fr))] lg:[grid-template-columns:repeat(5,minmax(0,1fr))] xl:gap-4">
         {facultyMembers.map(member => (
           <FacultyHomeCard key={member.name} member={member} />
         ))}
@@ -618,7 +618,7 @@ export const LabHome: React.FC<{
             <Satellite className="shrink-0 text-sky-700" size={34} />
           </div>
           <p className="mt-7 text-[17px] leading-9 text-slate-700">
-            浙江工业大学计算机学院计算机视觉团队，聚焦计算机视觉、智慧气象与人工智能的交叉研究领域，科研积累深厚，平台设施完善。团队当前承担国家自然科学基金联合重点、面上及省杰出青年科学基金延续资助项目等，研究方向前沿且科研经费充足，为各种研究的开展提供坚实支撑。
+            浙江工业大学计算机学院气象人工智能实验室，聚焦计算机视觉、智慧气象与人工智能的交叉研究领域，科研积累深厚，平台设施完善。团队当前承担国家自然科学基金联合重点、面上及省杰出青年科学基金延续资助项目等，研究方向前沿且科研经费充足，为各种研究的开展提供坚实支撑。
           </p>
         </motion.aside>
       </div>
@@ -661,15 +661,15 @@ const FacultyDetailSection: React.FC = () => (
     <div className="mb-8">
       <h2 className={sectionTitleClass}>团队老师</h2>
     </div>
-    <div className="grid justify-start gap-4 [grid-template-columns:repeat(auto-fit,minmax(150px,170px))]">
+    <div className="grid justify-start gap-5 [grid-template-columns:repeat(auto-fit,minmax(180px,210px))]">
       {facultyMembers.map(member => (
-        <article key={member.name} className="flex w-full max-w-[170px] flex-col rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-1 hover:border-sky-300 hover:shadow-lg">
+        <article key={member.name} className="flex w-full max-w-[210px] flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-sky-300 hover:shadow-lg">
           <MemberPortrait name={member.name} size="card" className="bg-slate-50" />
           <div className="mt-4 text-left">
-            <h3 className="text-lg font-bold text-slate-950">{member.name}</h3>
-            <p className="mt-1 text-sm font-semibold text-slate-500">{member.title}</p>
+            <h3 className="text-xl font-bold text-slate-950">{member.name}</h3>
+            <p className="mt-1 text-base font-semibold text-slate-500">{member.title}</p>
             {member.research && (
-              <p className="mt-3 inline-flex rounded-md bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700 ring-1 ring-sky-100">
+              <p className="mt-3 inline-flex rounded-md bg-sky-50 px-3 py-1.5 text-sm font-bold text-sky-700 ring-1 ring-sky-100">
                 {member.research}
               </p>
             )}

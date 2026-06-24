@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { CloudSeerPoint, Language } from '../../../types';
 import { TRANSLATIONS } from '../../../constants';
-import metricsData from '../../../data/metrics.json';
+import { cloudSeerMetricsData } from './CloudSeerMetricsData';
 const BAND_IDS = ['0.64', '1.6', '3.9', '8.6', '10.4', '11.2', '12.3', '13.3'];
 
 interface CloudSeerMetricsProps {
@@ -22,13 +22,6 @@ interface CloudSeerMetricsProps {
   selectedBandId: string;
 }
 
-interface MetricsData {
-  mae: number[][];
-  mse: number[][];
-  ssim: number[][];
-  psnr: number[][];
-}
-
 export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
   data,
   currentIndex,
@@ -36,7 +29,7 @@ export const CloudSeerMetrics: React.FC<CloudSeerMetricsProps> = ({
   selectedBandId,
 }) => {
   const t = (key: string) => TRANSLATIONS[key][language];
-  const metrics = metricsData as MetricsData;
+  const metrics = cloudSeerMetricsData;
 
   const bandIndex = BAND_IDS.indexOf(selectedBandId);
   const isLoading = bandIndex === -1;

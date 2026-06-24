@@ -5,7 +5,7 @@ const PROJECT_ROOT = __dirname;
 const WORKSPACE_ROOT = path.resolve(PROJECT_ROOT, '..');
 const IBTRACS_CSV_PATH = path.resolve(WORKSPACE_ROOT, 'data', 'SelectedTyphoons_ibtracs.csv');
 const IDOL_CSV_PATH = path.resolve(WORKSPACE_ROOT, 'data', 'SelectedTyphoons_IDOL_Estimated.csv');
-const TARGET_JSON_PATH = path.resolve(PROJECT_ROOT, 'src', 'data', 'typhoonData.json');
+const TARGET_JSON_PATH = path.resolve(PROJECT_ROOT, 'src', 'data', 'IDOLTyphoonData.json');
 
 const NM_TO_KM = 1.852;
 const KT_TO_MS = 0.514444;

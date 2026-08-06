@@ -2,7 +2,7 @@
 
 > 浙江工业大学气象人工智能实验室科研成果展示与交互式可视化平台。
 
-**在线体验：** [https://www.aimeteorology.cn/](https://www.aimeteorology.cn/)
+**网页链接：** [https://www.aimeteorology.cn/](https://www.aimeteorology.cn/)
 
 ## 项目简介
 

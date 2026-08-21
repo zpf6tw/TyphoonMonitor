@@ -21,7 +21,8 @@
     "react-dom": "^19.2.3",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.6.0",
-    "three": "^0.167.1"
+    "three": "^0.167.1",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",

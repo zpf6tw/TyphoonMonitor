@@ -33,6 +33,7 @@ import {
   type PredictionRow,
   type ServiceState,
 } from './IrradianceNowcastApi';
+import { StationGlobeOverview } from './StationGlobeOverview';
 
 const POLL_INTERVAL_MS = 30_000;
 const HISTORY_LIMITS = [24, 72, 144] as const;
@@ -108,7 +109,7 @@ const ForecastPanel: React.FC<{ rows: PredictionRow[]; issueTime?: string }> = (
     .map(row => ({ ...row, color: HORIZON_COLORS[row.step] || '#0284c7' }));
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <section id="irradiance-forecast" className="scroll-mt-20 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="rounded-lg bg-amber-50 p-2 text-amber-600"><SunMedium size={18} /></span>
@@ -323,6 +324,8 @@ export const IrradianceNowcastView: React.FC = () => {
       </header>
 
       <main className="mx-auto max-w-[1680px] space-y-4 p-3 sm:p-5">
+        <StationGlobeOverview />
+
         {!isIrradianceApiConfigured && (
           <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
             <ServerCog className="mt-0.5 shrink-0" size={20} />

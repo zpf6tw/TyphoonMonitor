@@ -39,6 +39,16 @@ npm install
 npm run dev
 ```
 
+## 太阳辐照度临近预测
+
+“能源气象服务 → 太阳辐照度预测”视图从实时推理服务读取未来 10/20/30 分钟预测、历史验证指标、运行状态与最新 ASI-16 天空图。部署前在 Vite 构建环境中配置：
+
+```bash
+VITE_IRRADIANCE_API_BASE_URL=https://your-nowcast-api.example.com
+```
+
+前端调用只读接口 `GET /api/nowcast-dashboard?history_limit=72` 和 `GET /api/sky-images/file?path=...`，每 30 秒自动同步一次。恢复运行、回补等管理操作仍由受保护的后台运维入口执行，不在公开网页中暴露管理令牌。
+
 ## 技术栈
 
 React 19 · TypeScript · Vite 6 · Tailwind CSS 4 · React-Leaflet / Leaflet · Recharts · Framer Motion

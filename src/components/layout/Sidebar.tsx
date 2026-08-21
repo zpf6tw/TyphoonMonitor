@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Microscope,
   PanelLeftClose,
+  SunMedium,
   Users,
   Wind,
 } from 'lucide-react';
@@ -156,6 +157,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, activ
     scrollToLabSection(sectionId);
   };
 
+  const goIrradianceNowcast = () => {
+    onNavigate('irradiance_nowcast');
+    if (window.innerWidth < 1024) onCollapse();
+  };
+
   const groups: NavGroup[] = [
     {
       id: 'lab',
@@ -188,9 +194,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, activ
       id: 'energy',
       label: '能源气象服务',
       icon: Cloud,
-      active: currentView === 'cloudseer',
+      active: currentView === 'cloudseer' || currentView === 'irradiance_nowcast',
       subItems: [
         { label: 'CLOUDSEER', active: currentView === 'cloudseer', onClick: () => onNavigate('cloudseer') },
+        { label: '太阳辐照度预测', icon: SunMedium, active: currentView === 'irradiance_nowcast', onClick: goIrradianceNowcast },
       ],
     },
     {

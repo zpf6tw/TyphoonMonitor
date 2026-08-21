@@ -43,6 +43,7 @@ const IDOLTimelineControls = React.lazy(() => import('./components/typhoon-inten
 const CloudSeerMetrics = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerMetrics })));
 const CloudSeerView = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.CloudSeerView })));
 const MotionVectorField = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.MotionVectorField })));
+const IrradianceNowcastView = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.IrradianceNowcastView })));
 
 const LoadingSurface: React.FC<{ panel?: boolean }> = ({ panel = false }) => (
   <div className={`flex ${panel ? 'h-full w-[420px]' : 'h-full w-full'} items-center justify-center bg-slate-50`}>
@@ -412,6 +413,8 @@ const App: React.FC = () => {
             onToggleRightPanel={() => setIsCloudseerRightPanelOpen(!isCloudseerRightPanelOpen)}
           />
         );
+      case 'irradiance_nowcast':
+        return <IrradianceNowcastView />;
       case 'idol':
         return renderIdolView();
       default:

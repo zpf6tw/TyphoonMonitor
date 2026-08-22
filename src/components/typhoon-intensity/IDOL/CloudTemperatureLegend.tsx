@@ -44,7 +44,7 @@ export const CloudTemperatureLegend: React.FC<{
   language: Language;
   leftClassName: string;
 }> = ({ mode, language, leftClassName }) => (
-  <div className={`absolute top-[7.75rem] ${leftClassName} z-[1000] w-[280px] rounded-2xl border border-white bg-white/95 backdrop-blur-md p-3 shadow-xl pointer-events-none`}>
+  <div className={`absolute top-[7.75rem] ${leftClassName} z-[1000] w-[280px] rounded-2xl border border-brand-accent/30 bg-brand-warm/95 backdrop-blur-md p-3 shadow-xl pointer-events-none`}>
     <div className="flex items-center justify-between gap-3">
       <span className="text-[11px] font-bold text-slate-700">
         {CLOUD_IMAGE_MODE_LABELS[mode][language]}

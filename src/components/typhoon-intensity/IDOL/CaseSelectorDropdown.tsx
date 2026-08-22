@@ -56,7 +56,7 @@ export const CaseSelectorDropdown: React.FC<CaseSelectorDropdownProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 w-full max-h-72 overflow-y-auto bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl z-50"
+            className="absolute top-full mt-2 left-0 w-full max-h-72 overflow-y-auto bg-brand-warm/95 backdrop-blur-md border border-brand-accent/30 rounded-xl shadow-xl z-50"
           >
             {options.map(option => (
               <button
@@ -66,7 +66,7 @@ export const CaseSelectorDropdown: React.FC<CaseSelectorDropdownProps> = ({
                   onChange(option.id);
                   setIsOpen(false);
                 }}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-100 truncate ${value === option.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'}`}
+                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-brand-cool truncate ${value === option.id ? 'text-brand-primary bg-brand-cool/50' : 'text-slate-700'}`}
               >
                 {language === 'en' ? option.nameEn : option.nameZh}
               </button>

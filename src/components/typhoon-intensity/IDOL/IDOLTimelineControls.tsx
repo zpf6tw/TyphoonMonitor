@@ -56,14 +56,14 @@ export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
   onTimelineChange,
 }) => (
   <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none">
-    <div className="bg-white/95 backdrop-blur-md p-6 pb-6 border-t border-slate-200 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] flex flex-col gap-4 pointer-events-auto w-full">
+    <div className="bg-brand-warm/95 backdrop-blur-md p-6 pb-6 border-t border-brand-accent/30 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] flex flex-col gap-4 pointer-events-auto w-full">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onTogglePlaying}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${isPlaying ? 'bg-slate-100 text-slate-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'}`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${isPlaying ? 'bg-brand-cool text-slate-600' : 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'}`}
             >
               {isPlaying
                 ? <Pause size={20} fill="currentColor" />
@@ -81,7 +81,7 @@ export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
               <button
                 type="button"
                 onClick={onToggleCloudMap}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${showCloudMap ? 'bg-blue-100 text-blue-600' : 'hover:bg-slate-100 text-slate-400'}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${showCloudMap ? 'bg-brand-cool text-brand-primary' : 'hover:bg-brand-cool text-slate-400'}`}
                 title={language === 'en' ? 'Toggle Cloud Map' : '切换红外云图'}
               >
                 <Cloud size={16} />
@@ -91,7 +91,7 @@ export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
                   type="button"
                   key={mode}
                   onClick={() => onCloudModeChange(mode)}
-                  className={`h-8 min-w-[52px] px-2 rounded-full text-[11px] font-bold transition-colors ${showCloudMap && cloudMode === mode ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white hover:text-blue-600'}`}
+                  className={`h-8 min-w-[52px] px-2 rounded-full text-[11px] font-bold transition-colors ${showCloudMap && cloudMode === mode ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-500 hover:bg-brand-warm hover:text-brand-primary'}`}
                 >
                   {CLOUD_IMAGE_MODE_LABELS[mode][language]}
                 </button>
@@ -113,7 +113,7 @@ export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
               {language === 'en' ? 'UTC' : '协调世界时'}
             </p>
-            <p className="text-sm font-bold text-blue-600">{currentUtcLabel}</p>
+            <p className="text-sm font-bold text-brand-primary">{currentUtcLabel}</p>
           </div>
           <div className="h-8 w-px bg-slate-200 shrink-0" />
           <div className="flex gap-1 shrink-0">
@@ -149,10 +149,10 @@ export const IDOLTimelineControls: React.FC<IDOLTimelineControlsProps> = ({
           onTouchStart={onScrubStart}
           onTouchEnd={onScrubEnd}
           onChange={onTimelineChange}
-          className="relative z-10 w-full h-1.5 bg-slate-200/50 rounded-lg appearance-none cursor-pointer accent-blue-600"
+          className="relative z-10 w-full h-1.5 bg-brand-cool rounded-lg appearance-none cursor-pointer accent-brand-primary"
         />
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-blue-600 rounded-lg pointer-events-none z-0"
+          className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-brand-primary rounded-lg pointer-events-none z-0"
           style={{ width: `${lastIndex > 0 ? (currentIndex / lastIndex) * 100 : 0}%` }}
         />
       </div>

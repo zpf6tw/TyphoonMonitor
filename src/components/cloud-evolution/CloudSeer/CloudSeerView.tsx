@@ -27,7 +27,7 @@ const CollapsiblePanel: React.FC<{
   children: React.ReactNode;
   extraHeader?: React.ReactNode;
 }> = ({ title, isOpen, onToggle, children, extraHeader }) => (
-  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0 transition-all duration-300">
+  <div className="bg-brand-warm rounded-2xl border border-brand-accent/30 shadow-sm overflow-hidden shrink-0 transition-all duration-300">
     <button 
       onClick={onToggle} 
       className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-100 transition-colors border-b border-transparent data-[open=true]:border-slate-100"
@@ -91,7 +91,7 @@ const CaseSelectorDropdown: React.FC<{
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 w-48 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
+            className="absolute top-full mt-2 left-0 w-48 bg-brand-warm/95 backdrop-blur-md border border-brand-accent/30 rounded-xl shadow-xl overflow-hidden z-50"
           >
             {options.map((option) => (
               <button
@@ -101,7 +101,7 @@ const CaseSelectorDropdown: React.FC<{
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-100 ${
-                  value === option.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'
+                  value === option.id ? 'text-brand-primary bg-brand-cool/50' : 'text-slate-700'
                 }`}
               >
                 {language === 'en' ? option.nameEn : option.nameZh}
@@ -152,7 +152,7 @@ const BandDropdown: React.FC<{
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 w-36 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50"
+            className="absolute top-full mt-2 left-0 w-36 bg-brand-warm/95 backdrop-blur-md border border-brand-accent/30 rounded-xl shadow-xl overflow-hidden z-50"
           >
             {bands.map((band) => (
               <button
@@ -162,7 +162,7 @@ const BandDropdown: React.FC<{
                   setIsOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors hover:bg-slate-100 ${
-                  value === band.id ? 'text-blue-600 bg-blue-50/50' : 'text-slate-700'
+                  value === band.id ? 'text-brand-primary bg-brand-cool/50' : 'text-slate-700'
                 }`}
               >
                 {band.wavelength} {band.unit}
@@ -186,10 +186,10 @@ const OpacitySlider: React.FC<{
 
   return (
     <div 
-      className="flex items-center gap-3 bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-xl border border-white"
+      className="flex items-center gap-3 bg-brand-warm/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-xl border border-brand-accent/30"
       style={{ pointerEvents: 'auto' }} // 强制允许事件
     >
-      <Droplet size={14} className="text-sky-500" />
+      <Droplet size={14} className="text-brand-accent" />
       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
         {language === 'en' ? 'Opacity' : '透明度'}
       </span>
@@ -201,7 +201,7 @@ const OpacitySlider: React.FC<{
           step="0.1"
           value={value}
           onChange={handleSliderChange}
-          className="w-28 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
+          className="w-28 h-1.5 bg-brand-cool rounded-lg appearance-none cursor-pointer accent-brand-primary"
           style={{ pointerEvents: 'auto', position: 'relative', zIndex: 10 }}
         />
         <span className="text-xs font-mono font-bold text-slate-600 w-8 text-right">
@@ -334,7 +334,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={onToggleLeftPanel}
-          className="absolute top-6 left-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          className="absolute top-6 left-6 z-[1002] bg-brand-warm p-2 rounded-lg shadow-lg border border-brand-accent/30 text-slate-500 hover:text-brand-primary hover:bg-brand-cool transition-colors"
           title="Expand Sidebar"
         >
           <PanelLeftOpen size={20} />
@@ -347,7 +347,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={onToggleRightPanel}
-          className="absolute top-6 right-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          className="absolute top-6 right-6 z-[1002] bg-brand-warm p-2 rounded-lg shadow-lg border border-brand-accent/30 text-slate-500 hover:text-brand-primary hover:bg-brand-cool transition-colors"
           title="Expand Dashboard"
         >
           <PanelRightOpen size={20} />
@@ -361,7 +361,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
         }`}
       >
         {/* 波段选择 */}
-        <div className="bg-white/95 backdrop-blur-md px-3 py-2.5 rounded-2xl shadow-xl border border-white flex items-center gap-3 pointer-events-auto shrink-0">
+        <div className="bg-brand-warm/95 backdrop-blur-md px-3 py-2.5 rounded-2xl shadow-xl border border-brand-accent/30 flex items-center gap-3 pointer-events-auto shrink-0">
           <div className="flex items-center gap-2">
              <Layers size={14} className="text-indigo-500 shrink-0" />
              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">
@@ -379,11 +379,11 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
         {/* 底图开关 */}
         <button
           onClick={() => setShowBaseMap(!showBaseMap)}
-          className={`bg-white/95 backdrop-blur-md px-3 py-2.5 rounded-2xl shadow-xl border border-white flex items-center gap-2 pointer-events-auto shrink-0 transition-colors ${
-            showBaseMap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'text-slate-700'
+          className={`bg-brand-warm/95 backdrop-blur-md px-3 py-2.5 rounded-2xl shadow-xl border border-brand-accent/30 flex items-center gap-2 pointer-events-auto shrink-0 transition-colors ${
+            showBaseMap ? 'bg-brand-cool border-brand-accent text-brand-primary' : 'text-slate-700'
           }`}
         >
-          <Target size={14} className={showBaseMap ? 'text-blue-500' : 'text-slate-500'} />
+          <Target size={14} className={showBaseMap ? 'text-brand-primary' : 'text-slate-500'} />
           <span className="text-sm font-semibold">
             {showBaseMap ? (language === 'en' ? 'Hide Map' : '隐藏底图') : (language === 'en' ? 'Show Map' : '显示底图')}
           </span>
@@ -400,14 +400,14 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
 
       {/* 底部时间轴控制 */}
       <div className="absolute bottom-0 left-0 right-0 z-[1001] pointer-events-none">
-        <div className="bg-white/95 backdrop-blur-md p-6 pb-6 border-t border-slate-200 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] flex flex-col gap-4 pointer-events-auto w-full">
+        <div className="bg-brand-warm/95 backdrop-blur-md p-6 pb-6 border-t border-brand-accent/30 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)] flex flex-col gap-4 pointer-events-auto w-full">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setIsPlaying(!isPlaying)}
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      isPlaying ? 'bg-slate-100 text-slate-600' : 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                      isPlaying ? 'bg-brand-cool text-slate-600' : 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20'
                   }`}
                 >
                   {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} className="ml-1" fill="currentColor" />}
@@ -423,7 +423,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
                  <h4 className="text-sm font-bold text-slate-800">{t('cloud_timeline')}</h4>
                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-semibold">
                    <span className="rounded-md bg-slate-100 px-2.5 py-1 text-slate-500">{t('past_input')}</span>
-                   <span className="rounded-md bg-blue-50 px-2.5 py-1 text-blue-600">{t('future_pred')}</span>
+                   <span className="rounded-md bg-brand-cool px-2.5 py-1 text-brand-primary">{t('future_pred')}</span>
                  </div>
               </div>
             </div>
@@ -431,7 +431,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
             <div className="flex items-center gap-4 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
                <div className="text-right">
                   <p className="text-[11px] font-semibold text-slate-400">{language === 'en' ? 'Nowcasting Time' : '预报时间'}</p>
-                  <p className="text-sm font-bold text-blue-600">{currentPoint.time}</p>
+                  <p className="text-sm font-bold text-brand-primary">{currentPoint.time}</p>
                </div>
                <div className="h-8 w-px bg-slate-200" />
                <div className="flex gap-1">
@@ -458,10 +458,10 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
               max={selectedCase.data.length - 1} 
               value={currentIndex}
               onChange={handleTimelineChange}
-              className="relative z-10 w-full h-1.5 bg-slate-200/50 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="relative z-10 w-full h-1.5 bg-brand-cool rounded-lg appearance-none cursor-pointer accent-brand-primary"
             />
             <div 
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-blue-600 rounded-lg pointer-events-none z-0" 
+              className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-brand-primary rounded-lg pointer-events-none z-0"
               style={{ width: `${(currentIndex / (selectedCase.data.length - 1)) * 100}%` }} 
             />
             {/* 输入/预报分割线 */}
@@ -475,7 +475,7 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
               {['T-3h', 'T-2h', 'T-1h', 'T+0', 'T+1h', 'T+2h', 'T+3h'].map((label, i) => (
                   <span 
                     key={i} 
-                    className={`text-[10px] font-bold ${i < 3 ? 'text-slate-400' : 'text-blue-600'}`}
+                    className={`text-[10px] font-bold ${i < 3 ? 'text-slate-400' : 'text-brand-primary'}`}
                   >
                     {label}
                   </span>
@@ -486,8 +486,8 @@ export const CloudSeerView: React.FC<CloudSeerViewProps> = ({
 
       {/* 加载提示 */}
       {!isAllImagesLoaded && (
-        <div className="absolute top-6 right-6 z-[2000] bg-white/95 backdrop-blur-md px-4 py-2 rounded-xl shadow-xl border border-white flex items-center gap-3">
-          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute top-6 right-6 z-[2000] bg-brand-warm/95 backdrop-blur-md px-4 py-2 rounded-xl shadow-xl border border-brand-accent/30 flex items-center gap-3">
+          <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-sm font-medium text-slate-700">
             {language === 'en' ? 'Loading...' : '加载中...'}
           </span>

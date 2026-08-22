@@ -14,7 +14,6 @@ export const ModelPrinciplePanel: React.FC<ModelPrinciplePanelProps> = ({ langua
     <div className="space-y-4">
       {/* 架构图 */}
       <div className="relative bg-slate-900 rounded-xl p-4 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-900 to-slate-900" />
         
         <div className="relative z-10 space-y-4">
           {/* 输入 */}
@@ -32,21 +31,21 @@ export const ModelPrinciplePanel: React.FC<ModelPrinciplePanelProps> = ({ langua
           {/* 双分支 */}
           <div className="grid grid-cols-2 gap-4">
             {/* ADCMP 分支 */}
-            <div className="bg-blue-900/30 backdrop-blur p-3 rounded-lg border border-blue-800/50">
+            <div className="bg-brand-primary/20 backdrop-blur p-3 rounded-lg border border-brand-primary/50">
               <div className="flex items-center gap-2 mb-2">
-                <Wind size={14} className="text-blue-400" />
-                <span className="text-[10px] font-bold text-blue-300 uppercase tracking-wider">
+                <Wind size={14} className="text-brand-accent" />
+                <span className="text-[10px] font-bold text-brand-accent uppercase tracking-wider">
                   {t('adcmp_branch')}
                 </span>
               </div>
               <div className="space-y-1">
-                <div className="bg-blue-950/50 px-2 py-1 rounded text-[8px] text-blue-200">
+                <div className="bg-slate-950/50 px-2 py-1 rounded text-[8px] text-brand-cool">
                   Motion Predictor (UNet)
                 </div>
-                <div className="bg-blue-950/50 px-2 py-1 rounded text-[8px] text-blue-200">
+                <div className="bg-slate-950/50 px-2 py-1 rounded text-[8px] text-brand-cool">
                   Refinement Network
                 </div>
-                <div className="bg-blue-950/50 px-2 py-1 rounded text-[8px] text-blue-200">
+                <div className="bg-slate-950/50 px-2 py-1 rounded text-[8px] text-brand-cool">
                   Atmospheric Dynamics Loss
                 </div>
               </div>
@@ -101,7 +100,7 @@ export const ModelPrinciplePanel: React.FC<ModelPrinciplePanelProps> = ({ langua
       {/* 关键贡献 */}
       <div className="space-y-2">
         <div className="flex items-start gap-3">
-          <div className="mt-1 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+          <div className="mt-1 w-1.5 h-1.5 rounded-full bg-brand-primary shrink-0 shadow-[0_0_8px_rgba(0,165,224,0.5)]" />
           <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
             <span className="font-bold text-slate-800">{t('motion_texture_decouple')}:</span>{' '}
             {language === 'en' 

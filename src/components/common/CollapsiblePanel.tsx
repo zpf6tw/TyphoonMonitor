@@ -16,7 +16,7 @@ export const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
   children,
   extraHeader,
 }) => (
-  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0 transition-all duration-300">
+  <div className="bg-brand-warm rounded-2xl border border-brand-accent/30 shadow-sm overflow-hidden shrink-0 transition-all duration-300">
     <button
       type="button"
       onClick={onToggle}

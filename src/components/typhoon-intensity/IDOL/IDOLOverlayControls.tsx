@@ -42,9 +42,9 @@ export const IDOLOverlayControls: React.FC<IDOLOverlayControlsProps> = ({
   <div
     className={`absolute top-6 right-6 z-[1001] transition-all duration-300 ease-in-out pointer-events-none flex flex-wrap gap-4 items-start ${!isLeftPanelOpen ? 'left-[4.5rem]' : 'left-6'}`}
   >
-    <div className="bg-white/95 backdrop-blur-md w-[280px] p-3 rounded-2xl shadow-xl border border-white flex flex-col items-stretch gap-2 pointer-events-auto shrink-0 h-fit">
+    <div className="bg-brand-warm/95 backdrop-blur-md w-[280px] p-3 rounded-2xl shadow-xl border border-brand-accent/30 flex flex-col items-stretch gap-2 pointer-events-auto shrink-0 h-fit">
       <div className="flex items-center gap-2">
-        <Target size={14} className="text-blue-500" />
+        <Target size={14} className="text-brand-primary" />
         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('active_case')}</span>
       </div>
       <CaseSelectorDropdown
@@ -57,7 +57,7 @@ export const IDOLOverlayControls: React.FC<IDOLOverlayControlsProps> = ({
 
     <div className="flex-1 min-w-[20px]" />
 
-    <div className={`bg-white/95 backdrop-blur-md w-[280px] p-5 rounded-2xl border border-white shadow-xl flex flex-col gap-4 pointer-events-auto shrink-0 h-fit transition-all duration-300 ${!isRightPanelOpen ? 'mt-12' : ''}`}>
+    <div className={`bg-brand-warm/95 backdrop-blur-md w-[280px] p-5 rounded-2xl border border-brand-accent/30 shadow-xl flex flex-col gap-4 pointer-events-auto shrink-0 h-fit transition-all duration-300 ${!isRightPanelOpen ? 'mt-12' : ''}`}>
       <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
         <span>{t('model_comparison')}</span>
       </div>

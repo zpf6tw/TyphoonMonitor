@@ -45,8 +45,8 @@ const CloudSeerView = React.lazy(() => import('./components/cloud-evolution').th
 const MotionVectorField = React.lazy(() => import('./components/cloud-evolution').then(module => ({ default: module.MotionVectorField })));
 
 const LoadingSurface: React.FC<{ panel?: boolean }> = ({ panel = false }) => (
-  <div className={`flex ${panel ? 'h-full w-[420px]' : 'h-full w-full'} items-center justify-center bg-slate-50`}>
-    <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-sky-600 motion-safe:animate-spin" />
+  <div className={`flex ${panel ? 'h-full w-[420px]' : 'h-full w-full'} items-center justify-center bg-brand-cool`}>
+    <div className="h-8 w-8 rounded-full border-2 border-brand-accent/30 border-t-brand-primary motion-safe:animate-spin" />
   </div>
 );
 
@@ -337,7 +337,7 @@ const App: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsRightPanelOpen(true)}
-            className="absolute top-6 right-6 z-[1002] bg-white p-2 rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-sky-600 hover:bg-slate-50 transition-colors"
+            className="absolute top-6 right-6 z-[1002] bg-brand-warm p-2 rounded-lg shadow-lg border border-brand-accent/30 text-slate-500 hover:text-brand-primary hover:bg-brand-cool transition-colors"
             title="Expand Dashboard"
           >
             <PanelRightOpen size={20} />
@@ -420,7 +420,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#eef9ff] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-brand-cool font-sans">
       {/* 左侧边栏 */}
       <motion.aside
         initial={false}
@@ -437,7 +437,7 @@ const App: React.FC = () => {
       </motion.aside>
 
       {/* 主内容 */}
-      <main className={`relative flex min-w-0 flex-1 flex-col overflow-hidden ${currentView === 'lab_home' || currentView === 'lab_team' || currentView === 'lab_publications' ? 'bg-[#eef9ff]' : 'bg-slate-100'}`}>
+      <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-brand-cool">
         <React.Suspense fallback={<LoadingSurface />}>
           {renderMainContent()}
         </React.Suspense>
@@ -448,7 +448,7 @@ const App: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsLeftPanelOpen(true)}
-            className="absolute top-6 left-6 z-[1002] rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-lg transition-colors hover:bg-slate-50 hover:text-sky-600"
+            className="absolute top-6 left-6 z-[1002] rounded-lg border border-brand-accent/30 bg-brand-warm p-2 text-slate-500 shadow-lg transition-colors hover:bg-brand-cool hover:text-brand-primary"
             title="Expand Sidebar"
           >
             <PanelLeftOpen size={20} />
@@ -464,7 +464,7 @@ const App: React.FC = () => {
             animate={{ width: isRightPanelOpen ? RIGHT_PANEL_WIDTH : 0, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="h-full border-l border-slate-200 bg-white z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
+            className="h-full border-l border-brand-accent/30 bg-brand-warm z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
           >
             <React.Suspense fallback={<LoadingSurface panel />}>
               {isRightPanelOpen && (
@@ -496,13 +496,13 @@ const App: React.FC = () => {
             animate={{ width: isCloudseerRightPanelOpen ? RIGHT_PANEL_WIDTH : 0, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="h-full border-l border-slate-200 bg-white z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
+            className="h-full border-l border-brand-accent/30 bg-brand-warm z-10 relative flex-shrink-0 overflow-hidden shadow-xl"
           >
             <React.Suspense fallback={<LoadingSurface panel />}>
               <div className="w-[420px] h-full flex flex-col">
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="p-4 border-b border-brand-accent/20 flex items-center justify-between bg-brand-cool/50">
                   <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Activity size={18} className="text-sky-500" />
+                    <Activity size={18} className="text-brand-accent" />
                     <span>{t('analysis_dashboard')}</span>
                   </div>
                   <button
@@ -531,7 +531,7 @@ const App: React.FC = () => {
                     title={t('motion_vector_field')}
                     isOpen={cloudseerPanels.motion}
                     onToggle={() => toggleCloudseerPanel('motion')}
-                    extraHeader={<Wind size={14} className="text-sky-500" />}
+                    extraHeader={<Wind size={14} className="text-brand-accent" />}
                   >
                     <MotionVectorField
                       data={

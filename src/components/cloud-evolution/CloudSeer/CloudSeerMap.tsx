@@ -192,7 +192,7 @@ export const CloudSeerMap: React.FC<CloudSeerMapProps> = ({
 
   if (!showBaseMap) {
     return (
-      <div className="w-full h-full relative bg-white">
+      <div className="w-full h-full relative bg-brand-warm">
         <div className="absolute inset-0 opacity-[0.08] pointer-events-none">
           <div className="w-full h-full" style={{ 
             backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)', 

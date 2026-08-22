@@ -58,7 +58,7 @@ export const MotionVectorField: React.FC<MotionVectorFieldProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-2">
-      <div className="w-full bg-white rounded-xl overflow-hidden relative">
+      <div className="w-full bg-brand-warm rounded-xl overflow-hidden relative">
         {isPastFrame ? (
           <div className="w-full aspect-square flex items-center justify-center bg-slate-50 rounded-xl">
             <p className="text-slate-400 text-sm font-medium">

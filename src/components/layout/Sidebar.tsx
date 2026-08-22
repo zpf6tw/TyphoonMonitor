@@ -48,7 +48,7 @@ const scrollToLabSection = (sectionId: string) => {
   }, 80);
 };
 
-const sidebarHeaderVisual = 'radial-gradient(circle at 28% 18%, rgba(255,255,255,0.34), transparent 30%), radial-gradient(circle at 72% 74%, rgba(103,232,249,0.42), transparent 36%), linear-gradient(135deg, #38bdf8 0%, #0ea5e9 54%, #22d3ee 100%)';
+const sidebarHeaderVisual = 'var(--color-brand-primary)';
 const schoolBadgeUrl = new URL('../../assets/lab/school-badge/school-badge-page-2-white.png', import.meta.url).href;
 
 const NavSubItem: React.FC<SubItem> = ({ label, icon: Icon, active, onClick }) => (
@@ -57,14 +57,14 @@ const NavSubItem: React.FC<SubItem> = ({ label, icon: Icon, active, onClick }) =
     onClick={onClick}
     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium transition-colors ${
       active
-        ? 'bg-sky-50 text-sky-600'
+        ? 'bg-brand-cool text-brand-primary'
         : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
     }`}
   >
     {Icon ? (
-      <Icon size={14} className={active ? 'text-sky-600' : 'text-slate-400'} />
+      <Icon size={14} className={active ? 'text-brand-primary' : 'text-slate-400'} />
     ) : (
-      <span className={`ml-1 mr-0.5 h-1.5 w-1.5 rounded-full ${active ? 'bg-sky-500' : 'bg-slate-300'}`} />
+      <span className={`ml-1 mr-0.5 h-1.5 w-1.5 rounded-full ${active ? 'bg-brand-accent' : 'bg-slate-300'}`} />
     )}
     <span>{label}</span>
   </button>
@@ -87,7 +87,7 @@ const NavGroupItem: React.FC<{
         aria-expanded={hasSubItems ? expanded : undefined}
         className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition-colors ${
           group.active
-            ? 'bg-sky-50 text-sky-600'
+            ? 'bg-brand-cool text-brand-primary'
             : group.disabled
               ? 'cursor-not-allowed text-slate-400 opacity-50'
               : 'text-slate-600 hover:bg-slate-100'
@@ -202,9 +202,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate, currentView, activ
   ];
 
   return (
-    <div className="relative z-40 flex h-full w-[240px] min-w-[240px] flex-col border-r border-slate-200 bg-white text-slate-800">
+    <div className="relative z-40 flex h-full w-[240px] min-w-[240px] flex-col border-r border-brand-accent/30 bg-brand-warm text-slate-800">
       <div
-        className="flex items-start justify-between gap-2 border-b border-sky-200/60 p-4 text-white shadow-sm"
+        className="flex items-start justify-between gap-2 border-b border-brand-accent/60 p-4 text-brand-warm shadow-sm"
         style={{ background: sidebarHeaderVisual }}
       >
         <button

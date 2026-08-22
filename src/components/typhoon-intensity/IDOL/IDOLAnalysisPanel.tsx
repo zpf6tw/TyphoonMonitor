@@ -59,7 +59,7 @@ const TyphoonCaseTabs: React.FC<{
           type="button"
           key={stormCode}
           onClick={() => onChange(stormCode)}
-          className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-sky-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white hover:text-sky-600'}`}
+          className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold transition-colors ${isActive ? 'bg-brand-primary text-white shadow-sm' : 'text-slate-500 hover:bg-brand-warm hover:text-brand-primary'}`}
         >
           {language === 'en' ? typhoonCase.nameEn : typhoonCase.nameZh}
         </button>
@@ -98,9 +98,9 @@ export const IDOLAnalysisPanel: React.FC<IDOLAnalysisPanelProps> = ({
 
   return (
     <div className="h-full flex flex-col" style={{ width }}>
-      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+      <div className="p-4 border-b border-brand-accent/20 flex items-center justify-between bg-brand-cool/50">
         <div className="flex items-center gap-2 text-slate-700 font-bold">
-          <Settings2 size={18} className="text-sky-500" />
+          <Settings2 size={18} className="text-brand-accent" />
           <span>{t('analysis_dashboard')}</span>
         </div>
         <button
